@@ -16,6 +16,51 @@ M2B = 6
 
 class Ultrasonic_sensor():
     
+    def __init__(self,pin_echo,pin_trig):
+        self.pin_echo = pin_echo
+        self.pin_trig = pin_trig
+        
+        GPIO.setup(pin_trig,GPIO.OUT)
+        GPIO.setup(pin_echo,GPIO.IN)
+
+
+    def get_distance():
+        # Send a short pulse to the trigger pin
+        GPIO.output(TRIG_PIN, GPIO.HIGH)
+        time.sleep(0.00001)
+        GPIO.output(TRIG_PIN, GPIO.LOW)
+
+        # Measure the duration for the echo pulse
+        while GPIO.input(ECHO_PIN) == 0:
+            pulse_start = time.time()
+
+        while GPIO.input(ECHO_PIN) == 1:
+            pulse_end = time.time()
+
+        pulse_duration = pulse_end - pulse_start
+
+        # Calculate the distance based on the speed of sound (34300 cm/s)
+        distance = pulse_duration * 34300 / 2
+
+        return distance
+
+    def filter_signal():
+        filter_array = []
+        num_samples = 20
+        
+        for i in range(num_samples):
+            filter_array.append(get_distance())
+            time.sleep(0.03)
+        
+        filter_array.sort()
+        filtered_samples = filter_array[5:-5]
+        
+        distance = sum(filtered_samples) / len(filtered_samples)
+        
+        return distance
+
+
+
 
 
 class Motor():
