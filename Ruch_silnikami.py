@@ -151,6 +151,37 @@ class Motor():
             self.pwm_2.ChangeDutyCycle(speed)
 
 
+class Ncoder():
+    """
+    Class used to represent nkoder of robot
+    ...
+
+    Attributes
+    -----------
+    Current_position : int
+        Varaible to hold current position of encoder
+
+    Methods
+    -----------
+    update_position(value)
+        Variable Current_position is change by specific value 
+
+    reset_cunter()
+        Function to reset counting position
+
+    """
+    Current_position = 0
+
+    def update_position(self,value):
+        # Nastepuje aktualizcja pozycji
+        return value 
+
+    def reset_cunter(self):
+        # Zresetowanie licznika
+        self.Current_position = 0
+         
+
+
 class Robot():
     """
     Class used to encapsulate full robot system with two motors and one ultrasonic sensor
@@ -164,6 +195,8 @@ class Robot():
         Instance controlling right motor
     ultrasonik_sensor : Ultrasonic_sensor
         Instance of ultrasonic sensor
+    Distance_from_wall : float
+        Distance in centimeters from wall that should be set all the time
     
     Methods
     -------
@@ -174,6 +207,10 @@ class Robot():
         self.Motor_Left = Motor(M1A, M1B)
         self.Motor_Right = Motor(M2A, M2B)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
+        self.ncoder_floor = Ncoder()
+
+    def move_robot(self,distance):
+
 
 
 robot = Robot()
