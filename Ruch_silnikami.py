@@ -1,13 +1,16 @@
-#This programe used to demonstare how to use Loch Antiphase with Hat-MDD10
-#AN pin will act as sterring to control direction
-#DIG pin will act to ON/OFF motor output.
+# This program is used to demonstrate how to use Lock Antiphase with Hat-MDD10
+# AN pin will act as steering to control direction
+# DIG pin will act to ON/OFF motor output.
 
-import RPi.GPIO as GPIO			# using Rpi.GPIO module
-from time import sleep			# import function sleep for delay
-GPIO.setmode(GPIO.BCM)			# GPIO numbering
-GPIO.setwarnings(False)			# enable warning from GPIO
+import RPi.GPIO as GPIO          # using RPi.GPIO module
+from time import sleep, time     # import sleep for delay and time for timestamping
 
+GPIO.setmode(GPIO.BCM)           # Use BCM GPIO numbering
+GPIO.setwarnings(False)          # Disable GPIO warnings
 
+# Define GPIO pins
+TRIG_PIN = 10
+ECHO_PIN = 11
 M1A = 26
 M1B = 19
 M2A = 13
@@ -15,27 +18,53 @@ M2B = 6
 
 
 class Ultrasonic_sensor():
+    """
+    Class used to handle ultrasonic distance measurement
+    ...
     
-    def __init__(self,pin_echo,pin_trig):
+    Attributes
+    ----------
+    pin_echo : int
+        Pin number connected to ECHO signal
+    pin_trig : int
+        Pin number connected to TRIG signal
+    
+    Methods
+    -------
+    get_distance()
+        Returns a single distance measurement in centimeters
+    
+    filter_signal()
+        Returns filtered average of multiple distance samples
+    """
+
+    def __init__(self, pin_echo, pin_trig):
         self.pin_echo = pin_echo
         self.pin_trig = pin_trig
+
+        GPIO.setup(self.pin_trig, GPIO.OUT)
+        GPIO.setup(self.pin_echo, GPIO.IN)
+
+    def get_distance(self):
+        """
+        Function to perform a single measurement using the ultrasonic sensor.
         
-        GPIO.setup(pin_trig,GPIO.OUT)
-        GPIO.setup(pin_echo,GPIO.IN)
-
-
-    def get_distance():
+        Returns:
+        --------
+        distance : float
+            Distance from object in cm
+        """
         # Send a short pulse to the trigger pin
-        GPIO.output(TRIG_PIN, GPIO.HIGH)
-        time.sleep(0.00001)
-        GPIO.output(TRIG_PIN, GPIO.LOW)
+        GPIO.output(self.pin_trig, GPIO.HIGH)
+        sleep(0.00001)
+        GPIO.output(self.pin_trig, GPIO.LOW)
 
-        # Measure the duration for the echo pulse
-        while GPIO.input(ECHO_PIN) == 0:
-            pulse_start = time.time()
+        # Measure the duration of the echo pulse
+        while GPIO.input(self.pin_echo) == 0:
+            pulse_start = time()
 
-        while GPIO.input(ECHO_PIN) == 1:
-            pulse_end = time.time()
+        while GPIO.input(self.pin_echo) == 1:
+            pulse_end = time()
 
         pulse_duration = pulse_end - pulse_start
 
@@ -44,23 +73,27 @@ class Ultrasonic_sensor():
 
         return distance
 
-    def filter_signal():
+    def filter_signal(self):
+        """
+        Perform multiple measurements and average a filtered subset to reduce noise
+        
+        Returns:
+        --------
+        distance : float
+            Filtered average distance
+        """
         filter_array = []
         num_samples = 20
-        
+
         for i in range(num_samples):
-            filter_array.append(get_distance())
-            time.sleep(0.03)
-        
+            filter_array.append(self.get_distance())
+            sleep(0.03)
+
         filter_array.sort()
-        filtered_samples = filter_array[5:-5]
-        
+        filtered_samples = filter_array[5:-5]  # Remove extreme values
+
         distance = sum(filtered_samples) / len(filtered_samples)
-        
         return distance
-
-
-
 
 
 class Motor():
@@ -70,105 +103,103 @@ class Motor():
     
     Attributes
     ----------
-    pin_A: int
-        Number of selected pin to driver
-    pin_B: int
-        Number of selected pin to driver
+    pin_A : int
+        Number of selected GPIO pin for motor control
+    pin_B : int
+        Number of selected GPIO pin for motor control
     
-    Methodes
-    ----------
-    set_speed_motor(direction,speed)
-        Function set a choosen speed on the motor
-    
-    
+    Methods
+    -------
+    set_speed_motor(direction, speed)
+        Sets desired direction and speed to the motor
     """
-    
-    
-    
-    pin_A = 0
-    pin_B = 0
-    
-    def __init__(self,pin_A,pin_B):
+
+    def __init__(self, pin_A, pin_B):
         self.pin_A = pin_A
         self.pin_B = pin_B
-        
-        GPIO.setup(pin_A,GPIO.OUT)
-        GPIO.setup(pin_B,GPIO.OUT)
-        
-        pwm_1 = GPIO.PWM(pin_A,100)
-        pwm_2 = GPIO.PWM(pin_B,100)
-        
-        pwm_1.start(0)
-        pwm_2.start(0)
-    
-    def set_speed_motor(self,direction,speed):
+
+        GPIO.setup(pin_A, GPIO.OUT)
+        GPIO.setup(pin_B, GPIO.OUT)
+
+        self.pwm_1 = GPIO.PWM(pin_A, 100)  # Create PWM channel on pin A with 100Hz
+        self.pwm_2 = GPIO.PWM(pin_B, 100)  # Create PWM channel on pin B with 100Hz
+
+        self.pwm_1.start(0)
+        self.pwm_2.start(0)
+
+    def set_speed_motor(self, direction, speed):
         """
-        Function set a choosen speed on the motor
-        
+        Function to set direction and speed of the motor
+
         Parameters:
-        ---------------------
+        -----------
         direction : bool
-            1 - Left, 0 - Right
+            False - backward, True - forward
         
         speed : int
-            Value of speed is set beetwen 0 and 100 % 
-            0 - 0 rpm
-            100 - 35 rpm
-        
+            Value of speed set between 0 and 100 %
         """
-        if(direction == 0):
-            GPIO.setup(self.pin_A,GPIO.HIGH)
-            pwm_1.ChangeDutyCycle(speed)
+        if direction:
+            # Forward
+            GPIO.output(self.pin_B, GPIO.LOW)
+            GPIO.output(self.pin_A, GPIO.HIGH)
+            self.pwm_1.ChangeDutyCycle(speed)
         else:
-            GPIO.setup(self.pin_B,GPIO.HIGH)
-            pwm_2.ChangeDutyCycle(speed)
-    
-    
+            # Backward
+            GPIO.output(self.pin_A, GPIO.LOW)
+            GPIO.output(self.pin_B, GPIO.HIGH)
+            self.pwm_2.ChangeDutyCycle(speed)
+
+
 class Robot():
+    """
+    Class used to encapsulate full robot system with two motors and one ultrasonic sensor
+    ...
     
-                
+    Attributes
+    ----------
+    Motor_Left : Motor
+        Instance controlling left motor
+    Motor_Right : Motor
+        Instance controlling right motor
+    ultrasonik_sensor : Ultrasonic_sensor
+        Instance of ultrasonic sensor
+    
+    Methods
+    -------
+    (none yet - extendable)
+    """
+
+    def __init__(self):
+        self.Motor_Left = Motor(M1A, M1B)
+        self.Motor_Right = Motor(M2A, M2B)
+        self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
 
 
-while True:
-    m1b.ChangeDutyCycle(10)
-    GPIO.output(M1A,GPIO.LOW)
-    m2b.ChangeDutyCycle(10)
-    GPIO.output(M2A,GPIO.LOW)
+robot = Robot()
 
+try:
+    while True:
+        print("Przód")
+        robot.Motor_Left.set_speed_motor(True, 70)
+        robot.Motor_Right.set_speed_motor(True, 70)
+        sleep(2)
 
+        print("Stop")
+        robot.Motor_Left.set_speed_motor(True, 0)
+        robot.Motor_Right.set_speed_motor(True, 0)
+        sleep(1)
 
+        print("Tył")
+        robot.Motor_Left.set_speed_motor(False, 70)
+        robot.Motor_Right.set_speed_motor(False, 70)
+        sleep(2)
 
+        print("Stop")
+        robot.Motor_Left.set_speed_motor(False, 0)
+        robot.Motor_Right.set_speed_motor(False, 0)
+        sleep(3)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-					
+except KeyboardInterrupt:
+    GPIO.cleanup()
+    print("Program zatrzymany.")
