@@ -15,12 +15,54 @@ M1A = 26             # Motor 1 pin A
 M1B = 19             # Motor 1 pin B
 M2A = 13             # Motor 2 pin A
 M2B = 6              # Motor 2 pin B
-ENDSTOP1_PIN = 1
-ENDSTOP2_PIN = 2
-ENDSTOP3_PIN = 3
+ENDSTOP1_PIN = 1     # Endstop start position 
+ENDSTOP2_PIN = 2     # Endstop end position 
+ENDSTOP3_PIN = 3     # Endstop Z homming
 
 
-        
+class Endstop():
+    """
+    Class representing a limit switch (endstop)
+    ...
+    
+    Attributes
+    ----------
+
+    bounce_time : int 
+        Time in milisecods in which CPU ignores other trigeers like that it is mechanizm to eliminate bouncing
+
+    actual_state : bool
+        Current state of the endstop (True = triggered, False = not triggered)
+
+    endstop_pin : int
+        GPIO pin number connected to the endstop
+
+    Methods
+    -------
+    change_detected()
+        Checks the GPIO pin and updates the actual state of the endstop
+    """
+    bounce_time = 50
+    actual_state = False
+
+    def __init__(self, pin):
+
+        self.endstop_pin = pin
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    
+    def change_detected(self):
+        """
+        Detects the current state of the endstop
+
+        Updates the 'actual_state' attribute depending on the GPIO input:
+        - True if the endstop is triggered (logic LOW)
+        - False if the endstop is not triggered (logic HIGH)
+        """
+        if not GPIO.input(self.endstop_pin):
+            self.actual_state = True
+        else:
+            self.actual_state = False
+
 
 
 class Ultrasonic_sensor():
@@ -264,6 +306,9 @@ class Robot():
         self.Motor_Right = Motor(M2A, M2B)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
         self.ncoder_floor = Ncoder()
+        self.endstop_floor_1 = Endstop(ENDSTOP1_PIN)
+        self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
+        self.endstop_Z_axis = Endstop(ENDSTOP3_PIN)
 
     def move_forward(self, distance):
         """
@@ -313,8 +358,14 @@ class Robot():
             print("[STOP] Program zatrzymany.")
 
 
-# === Main Test Sequence ===
+# Main setup
+
 robot = Robot()
+GPIO.add_event_detect(robot.endstop_floor_1.endstop_pin,GPIO.BOTH,callback=robot.endstop_floor_1.change_detected,bouncetime=robot.endstop_floor_1.bounce_time)
+GPIO.add_event_detect(robot.endstop_floor_2.endstop_pin,GPIO.BOTH,callback=robot.endstop_floor_1.change_detected,bouncetime=robot.endstop_floor_2.bounce_time)
+
+# === Main Test Sequence ===
+
 
 try:
     while True:
