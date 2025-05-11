@@ -313,49 +313,77 @@ class Robot():
     def move_forward(self, distance):
         """
         Moves the robot forward or backward while adjusting its speed to maintain a target distance from the wall.
-        The movement is controlled using a proportional-integral control (PI) system.
+        Includes smooth acceleration and deceleration. The movement is controlled using a PI system.
+        Stops automatically after traveling the specified distance.
 
         Parameters
         ----------
         distance : float
             The target distance (positive for forward, negative for backward).
+        is_moving : bool
+            Flag indicating whether the robot is currently moving (True) or stationary (False).
+
         """
         direction = True if distance >= 0 else False
         error_integral = 0.0
+        target_position = abs(distance)  # target travel distance in cm
+
+        self.ncoder_floor.reset_cunter()
+        current_position = 0.0
+        self.is_moving = True
 
         try:
-            while True:
-                # 1. Measure current distance from the wall
+            while current_position < target_position:
+                # === 1. Measure current distance from the wall
                 current_distance = self.ultrasonik_sensor.filter_signal()
 
-                # 2. Calculate the error (difference between target and current distance)
+                # === 2. PI controller for wall distance
                 error = self.target_distance_from_wall - current_distance
-
-                # 3. Update integral term (with anti-windup)
                 error_integral += error * self.dt
-                error_integral = max(-50, min(50, error_integral))  # Clamping integral value
+                error_integral = max(-50, min(50, error_integral))
 
-                # 4. Compute the control output
-                control_output = self.Kp * error + self.Ki * error_integral
+                base_output = self.Kp * error + self.Ki * error_integral
+                base_speed = min(abs(int(base_output)), self.max_speed)
 
-                # 5. Limit the speed to the maximum allowed speed
-                speed = min(abs(int(control_output)), self.max_speed)
+                # === 3. Smooth acceleration
+                acceleration_zone = 3.0  # cm for acceleration
+                if current_position < acceleration_zone:
+                    acceleration_factor = current_position / acceleration_zone
+                    base_speed = int(base_speed * acceleration_factor)
 
-                # 6. Drive the motors (opposite directions for differential drive)
-                self.Motor_Left.set_speed_motor(direction, speed)
-                self.Motor_Right.set_speed_motor(not direction, speed)
+                # === 4. Smooth deceleration
+                remaining = target_position - current_position
+                if remaining < 3.0:
+                    if remaining < 0.5:
+                        base_speed = 0
+                    elif remaining < 1.0:
+                        base_speed = int(base_speed * 0.25)
+                    elif remaining < 2.0:
+                        base_speed = int(base_speed * 0.5)
+                    else:
+                        base_speed = int(base_speed * 0.75)
 
-                # 7. Print debug information
-                print(f"[INFO] Dystans: {current_distance:.2f} cm | Błąd: {error:.2f} | Prędkość: {speed}")
+                # === 5. Apply to motors
+                self.Motor_Left.set_speed_motor(direction, base_speed)
+                self.Motor_Right.set_speed_motor(not direction, base_speed)
+
+                # === 6. Update position estimate
+                distance_per_loop = base_speed * self.dt * 0.1  # adjust this factor to your robot
+                current_position = self.ncoder_floor.update_position(distance_per_loop)
+
+                print(f"[INFO] Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}")
 
                 sleep(self.dt)
 
         except KeyboardInterrupt:
-            # Stop motors when interrupted
+            print("[STOP] Interrupted by user")
+
+        finally:
             self.Motor_Left.set_speed_motor(True, 0)
             self.Motor_Right.set_speed_motor(True, 0)
-            GPIO.cleanup()
-            print("[STOP] Program zatrzymany.")
+            self.is_moving = False
+            print("[DONE] Target distance reached.")
+
 
 
 # Main setup
