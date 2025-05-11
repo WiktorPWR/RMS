@@ -15,6 +15,12 @@ M1A = 26             # Motor 1 pin A
 M1B = 19             # Motor 1 pin B
 M2A = 13             # Motor 2 pin A
 M2B = 6              # Motor 2 pin B
+ENDSTOP1_PIN = 1
+ENDSTOP2_PIN = 2
+ENDSTOP3_PIN = 3
+
+
+        
 
 
 class Ultrasonic_sensor():
