@@ -10,7 +10,8 @@ class Robot:
         self.log("[Robot] - Initialized successfully")
 
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[Robot]", "message": message, "type": type})
+        self.status_log.append({"source": "Robot", "message": message, "type": type})
+
 
     def move_forward(self, distance):
         try:
