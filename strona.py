@@ -8,10 +8,15 @@
 
 from flask import Flask, render_template, request
 from threading import Thread
+from flask import jsonify
 
 app = Flask(__name__)
 robot = Robot() #musi być gotowa klasa Robot()
 
+@app.route('/logs', methods=['GET'])
+def get_logs():
+  return jsonify(robot.status_log)
+  
 @app.route('/')
 def index():
   return render_template('index.html')
