@@ -45,21 +45,23 @@
 
   <h3>Logi robota:</h3>
   <pre id="logArea"></pre>
+
   <script>
-    document.getElementById("robotForm").addEventListener("submit", async function (e){
+    document.getElementById("robotForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const x = document.getElementById("x").value;
       const z = document.getElementById("z").value;
 
-      try{
-        const response = await fetch("/start",{
+      try {
+        const response = await fetch("/start", {
           method: "POST",
-          headers: { "Content-Type": "application/json"},
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ x, z }),
         });
 
         const result = await response.json();
         showMessage(result.message, result.status);
+        updateLogs();
       } catch (err) {
         showMessage("Błąd połączenia z serwerem", "error");
       }
@@ -76,11 +78,14 @@
       try {
         const response = await fetch("/logs");
         const logs = await response.json();
-        document.getElementById("logArea").textContent = logs.join("\n");
+        document.getElementById("logArea").textContent = logs.map(
+          log => `[${log.source}] ${log.message}`
+        ).join("\n");
       } catch (err) {
         console.error("Nie udało się pobrać logów");
       }
     }
+
     setInterval(updateLogs, 2000);
   </script>
 </body>
