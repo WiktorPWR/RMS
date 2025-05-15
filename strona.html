@@ -75,6 +75,12 @@
       const x = document.getElementById("x").value;
       const z = document.getElementById("z").value;
 
+  
+  document.getElementById("logArea").textContent = "";
+  const msgDiv = document.getElementById("message");
+  msgDiv.style.display = "none";
+  msgDiv.textContent = "";
+
       try{
         const response = await fetch("/start",{
           method: "POST",
