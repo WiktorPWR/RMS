@@ -12,19 +12,24 @@ def index():
 
 @app.route('/start', methods=['POST'])
 def start():
+    print("[BACKEND] Otrzymano żądanie POST /start")
     status_log.clear()
 
     try:
         data = request.get_json()
+        print(f"[BACKEND] Dane z frontendu: {data}")
         x = float(data['x'])
         z = float(data['z'])
     except (KeyError, ValueError, TypeError) as e:
         msg = f"Błędne dane wejściowe: {e}"
+        print("[BACKEND]", msg)
         status_log.append({"source": "App", "message": msg, "type": "error"})
         return jsonify({"status": "error", "message": msg, "logs": status_log}), 400
 
     if hasattr(robot, "endstop_floor_1") and not robot.endstop_floor_1.actual_state:
-        robot.log("Robot nie jest w pozycji startowej - przestawianie...", "info")
+        msg = "Robot nie jest w pozycji startowej - przestawianie..."
+        print("[BACKEND]", msg)
+        robot.log(msg, "info")
 
     def run_robot():
         robot.log(f"Malowanie rozpoczęte: X={x} cm, Z={z} cm", "info")
