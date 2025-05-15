@@ -1,23 +1,65 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Panel sterowania robotem</title>
-    <script>
-      function validateForm(){
-        const x = document.getElementById("x").value;
-        const z = document.getElementById("z").value;
-        document.getElementById("start").disabled = !(x && z);
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel sterowania robotem</title>
+  <style>
+    #message {
+      margin-top: 20px;
+      padding: 10px;
+      display: none;
+      border-radius: 5px;
+    }
+    #message.succes {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    #message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <h2>Parametry malowania</h2>
+  <form id="robotForm">
+    <label for="x">Długość ściany (x):</label>
+    <input type="number" id="x" name="x" required><br><br>
+    <label for="z">Wysokość ściany (z):</label>
+    <input type="number" id="z" name="z" required><br><br>
+    <button id="start" type="submit">Start</button>  
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    document.getElementById("robotForm").addEventListener("submit", async function (e){
+      e.preventDefault();
+      const x = document.getElementById("x").value;
+      const z = document.getElementById("z").value;
+
+      try{
+        const response = await fetch("/start",{
+          method: "POST",
+          headers: { "Content-Type": "application/json"},
+          body: JSON.stringify({ x, z }),
+        });
+
+        const result = await response.json();
+        showMessage(result.message, result.status);
+      } catch (err) {
+        showMessage("Błąd połączenia z serwerem", "error");
       }
-    </script>
-  </head>
-  <body oninput="validateForm()">
-    <h2>Parametry malowania</h2>
-    <form action="/start" method="post">
-      <label for="x">Długość ściany (x):</label>
-      <input type="number" id="x" name="x" required><br><br>
-      <label for="z">Wysokość ściany (z):</label>
-      <input type="number" id="z" name="z" required><br><br>
-      <button id="start" type="submit" disabled>Start</button>
-    </form>
-  </body>
+    });
+
+    function showMessage(message, status) {
+      const msgDiv = document.getElementById("message");
+      msgDiv.textContent = message;
+      msgDiv.className = status === "success" ? "success" : "error";
+      msgDiv.style.display = "block";
+    }
+  </script>
+</body>
 </html>
