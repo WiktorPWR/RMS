@@ -1,12 +1,21 @@
 #-----------------------------------------------------------------------------
 #jak to ma wygladac w glownym kodzie:
+#w każdej strukturze mają znaleźć się elementy z poniższych komentarzy  
 class Robot:
-    def move_forward(self, x):
-        # jakiś test
-        if x > 100:
-            return ("Błąd: za daleko!", "error")
-        print(f"Robot jedzie do przodu o {x} cm")
-        return ("Robot jedzie!", "success")
+    def __init__(self):
+        self.status_log = []    #dodanie log w init klasy
+        
+    #funkcja komunikatów:
+    def log(self, msg):
+        print(f"[Robot] {msg}")    #tutaj [......] dla kazdej klasy jej nazwa
+        self.status_log.append(msg)
+
+    #tak ma wygladac wstawienie komunikatów:
+    def move_forward(self, distance):
+        self.log(f"Jade do przodu o {distance} cm")
+
+    def move_vertical(self, height):
+        self.log(f"Maluje pionowo na wysokosc {height} cm")
 #-----------------------------------------------------------------------------
 #jak to ma wygladac w pliku strona.py:
 @app.route('/start', methods=['POST'])
