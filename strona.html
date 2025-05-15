@@ -106,7 +106,7 @@ async function updateLogs() {
     logs.forEach(entry => {
       const line = document.createElement("div");
       line.classList.add("log-line", `log-${entry.type}`);
-      line.textContent = `${entry.source}: ${entry.message}`;
+      line.textContent = `${entry.source} ${entry.message}`;
       logArea.appendChild(line);
     });
   } catch (err) {
