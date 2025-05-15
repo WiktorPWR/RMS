@@ -1,56 +1,50 @@
-#pamietać o zainstalowaniu Flask:
-#pip install Flask
-#sudo python3 strona.py
-
-#wejscie z innego urzadzenia
-#http://<IP_RaspberryPI>
-
-
 from flask import Flask, render_template, request, jsonify
 from threading import Thread
 from test_robot import Robot
 
-
 app = Flask(__name__)
 status_log = []
-robot = Robot(status_log) #musi być gotowa klasa Robot()
+robot = Robot(status_log)
 
 @app.route('/')
 def index():
-  return render_template('strona.html')
+    return render_template('strona.html')
 
 @app.route('/start', methods=['POST'])
 def start():
-  data = request.get_json()
-  status_log.clear()
-  try:
-    x = float(data['x'])  #dlugosc sciany
-    z = float(data['z'])  #wysokosc sciany
-  except (KeyError, ValueError, TypeError):
-    status_log.append({"source": "App", "message": "Błędne dane wejściowe", "type": "error"})
-    return jsonify(status_log)
+    print("[BACKEND] Otrzymano żądanie POST /start")
+    status_log.clear()
 
-  #check pozycji startowej
-  if not robot.endstop_floor_1.actual_state:
-    print("[INFO] Robot nie jest w pozycji startowej - przestawianie...")
-    #wywołanie kodu powrotu do pozycji startowej
-    # robot_pos_start
-  
-  def run_robot():
-    robot.log(f"Malowanie rozpoczęte: X={x} cm, Z={z} cm", "info")
-    robot.move_forward(x)
-    #tutaj wywołanie obsługi ruchu góra doł - malowanie
-    # robot.move_vertical(z)
+    try:
+        data = request.get_json()
+        print(f"[BACKEND] Dane z frontendu: {data}")
+        x = float(data['x'])
+        z = float(data['z'])
+    except (KeyError, ValueError, TypeError) as e:
+        msg = f"Błędne dane wejściowe: {e}"
+        print("[BACKEND]", msg)
+        status_log.append({"source": "App", "message": msg, "type": "error"})
+        return jsonify({"status": "error", "message": msg, "logs": status_log}), 400
 
-  thread = Thread(target=run_robot)
-  thread.start()
+    if hasattr(robot, "endstop_floor_1") and not robot.endstop_floor_1.actual_state:
+        msg = "Robot nie jest w pozycji startowej - przestawianie..."
+        print("[BACKEND]", msg)
+        robot.log(msg, "info")
 
-  robot.log("Robot rozpoczął pracę", "success")
-  return jsonify(status_log)
+    def run_robot():
+        robot.log(f"Malowanie rozpoczęte: X={x} cm, Z={z} cm", "info")
+        robot.move_forward(x)
+        robot.log(f"Zakończono malowanie", "success")
+
+    thread = Thread(target=run_robot)
+    thread.start()
+
+    robot.log("Robot rozpoczął pracę", "success")
+    return jsonify({"status": "success", "message": "Robot uruchomiony", "logs": status_log})
 
 @app.route('/logs', methods=['GET'])
 def get_logs():
-  return jsonify(status_log)
+    return jsonify(status_log)
 
 if __name__ == '__main__':
-  app.run(host="0.0.0.0", port=80)  #dostep LAN z innych urzadzeń
+    app.run(host="0.0.0.0", port=5000, debug=True)
