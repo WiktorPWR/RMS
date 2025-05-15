@@ -3,33 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <title>Panel sterowania robotem</title>
-  <style>
-    #message {
-      margin-top: 20px;
-      padding: 10px;
-      display: none;
-      border-radius: 5px;
-    }
-    #message.success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    #message.error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    #logArea {
-      margin-top: 20px;
-      border: 1px solid #ccc;
-      padding: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      background-color: #f9f9f9;
-      font-family: monospace;
-    }
-  </style>
+<style>
+  #message {
+    margin-top: 20px;
+    padding: 10px;
+    display: none;
+    border-radius: 5px;
+  }
+  #message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  #message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  #logArea {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    font-family: monospace;
+  }
+
+  .log-line {
+    margin: 3px 0;
+  }
+
+  .log-success {
+    color: green;
+  }
+
+  .log-info {
+    color: black;
+  }
+
+  .log-warning {
+    color: orange;
+  }
+
+  .log-error {
+    color: red;
+  }
+</style>
+
+
 </head>
 <body>
   <h2>Parametry malowania</h2>
@@ -43,25 +66,24 @@
 
   <div id="message"></div>
 
-  <h3>Logi robota:</h3>
-  <pre id="logArea"></pre>
+<h3>Logi robota:</h3>
+<div id="logArea"></div>
 
   <script>
-    document.getElementById("robotForm").addEventListener("submit", async function (e) {
+    document.getElementById("robotForm").addEventListener("submit", async function (e){
       e.preventDefault();
       const x = document.getElementById("x").value;
       const z = document.getElementById("z").value;
 
-      try {
-        const response = await fetch("/start", {
+      try{
+        const response = await fetch("/start",{
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json"},
           body: JSON.stringify({ x, z }),
         });
 
         const result = await response.json();
         showMessage(result.message, result.status);
-        updateLogs();
       } catch (err) {
         showMessage("Błąd połączenia z serwerem", "error");
       }
@@ -74,17 +96,23 @@
       msgDiv.style.display = "block";
     }
 
-    async function updateLogs() {
-      try {
-        const response = await fetch("/logs");
-        const logs = await response.json();
-        document.getElementById("logArea").textContent = logs.map(
-          log => `[${log.source}] ${log.message}`
-        ).join("\n");
-      } catch (err) {
-        console.error("Nie udało się pobrać logów");
-      }
-    }
+async function updateLogs() {
+  try {
+    const response = await fetch("/logs");
+    const logs = await response.json();
+    const logArea = document.getElementById("logArea");
+    logArea.innerHTML = ""; // wyczyść stare logi
+
+    logs.forEach(entry => {
+      const line = document.createElement("div");
+      line.classList.add("log-line", `log-${entry.type}`);
+      line.textContent = `${entry.source}: ${entry.message}`;
+      logArea.appendChild(line);
+    });
+  } catch (err) {
+    console.error("Nie udało się pobrać logów");
+  }
+}
 
     setInterval(updateLogs, 2000);
   </script>
