@@ -9,7 +9,7 @@ class Robot:
         self.log("[Robot] - Initialized successfully") 
     #dajecie funkcje log (po prostu Ctrl C, Ctrl V - tylko zmieniacie nazwe z "Robot" na swoją np "Servo")
     def log(self, message, type="success"):
-        self.status_log.append({"source": "Robot", "message": message, "type": type})
+        self.status_log.append({"source": "[Robot]", "message": message, "type": type})
 
     def move_forward(self, distance):
         try:
