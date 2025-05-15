@@ -2,21 +2,42 @@
 #jak to ma wygladac w glownym kodzie:
 #w każdej strukturze mają znaleźć się elementy z poniższych komentarzy  
 class Robot:
-    def __init__(self):
-        self.status_log = []    #dodanie log w init klasy
-        
-    #funkcja komunikatów:
-    def log(self, msg):
-        print(f"[Robot] {msg}")    #tutaj [......] dla kazdej klasy jej nazwa
-        self.status_log.append(msg)
+    def __init__(self, status_log):
+        self.status_log = status_log    #do init dodajecie ten wiersz
+        self.is_moving = False
+        self.endstop_floor_1 = FakeEndstop()
+        self.log("[Robot] - Initialized successfully") 
+    #dajecie funkcje log (po prostu Ctrl C, Ctrl V - tylko zmieniacie nazwe z "Robot" na swoją np "Servo")
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "Robot", "message": message, "type": type})
 
-    #tak ma wygladac wstawienie komunikatów:
     def move_forward(self, distance):
-        self.log(f"Jade do przodu o {distance} cm")
+        try:
+            self.is_moving = True
+            #-------------------------------------------------------------------------------------
+            #tutaj przykład wyświetlania tekstu
+            #ogólnie dajecie self.log zamiast print (f"wasz tekst komunikatu", "typ komunikatu")
+            #typy jakie macie do wyboru to: info, warning, error, success
+            self.log(f"Started moving forward: {distance} cm", "info")    
+            #-------------------------------------------------------------------------------------
+            steps = int(distance // 10)
+            for i in range(steps):
+                self.log(f"Moving... {i * 10} / {distance} cm", "info")
+            self.log(f"Finished moving forward: {distance} cm", "success")
+        except Exception as e:
+            self.log(f"Error while moving: {e}", "error")
+        finally:
+            self.is_moving = False
 
-    def move_vertical(self, height):
-        self.log(f"Maluje pionowo na wysokosc {height} cm")
+    def stop(self):
+        if self.is_moving:
+            self.log("Robot stopped", "info")
+            self.is_moving = False
+        else:
+            self.log("Stop command received, but robot was not moving", "info")
+
 #-----------------------------------------------------------------------------
+#TO MACIE W DUPIE, ROBICIE TYLKO TO CO WYŻEJ
 #jak to ma wygladac w pliku strona.py:
 @app.route('/start', methods=['POST'])
 def start():
