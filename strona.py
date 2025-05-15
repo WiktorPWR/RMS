@@ -18,8 +18,12 @@ def index():
 
 @app.route('/start', methods=['POST'])
 def start():
-  x = float(request.form['x'])  #dlugosc sciany
-  z = float(request.form['z'])  #wysokosc sciany
+  data = request.get_json()
+  try:
+    x = float(data['x'])  #dlugosc sciany
+    z = float(data['z'])  #wysokosc sciany
+  except (KeyError, ValueError, TypeError):
+    return jsonify({"message": "Błędne dane wejściowe", "status": "error"})
 
   #check pozycji startowej
   if not robot.endstop_floor_1.actual_state:
@@ -36,7 +40,7 @@ def start():
   thread = Thread(target=run_robot)
   thread.start()
 
-  return "Robot rozpoczal prace"
+  return jsonify({"message": "Robot rozpoczal prace", "status": "success"})
 
 if __name__ == '__main__':
   app.run(host=0.0.0.0, port=80)  #dostep LAN z innych urzadzeń
