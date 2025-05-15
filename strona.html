@@ -99,6 +99,9 @@
 
     <button id="start" type="submit">Start</button>
   </form>
+	<form action="/kalibracja" method="POST">
+        	<button type="submit">Kalibracja</button>
+    	</form>
 
   <div id="message"></div>
 
@@ -106,25 +109,30 @@
   <div id="logArea"></div>
 
   <script>
-    document.getElementById("robotForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const x = document.getElementById("x").value;
-      const z = document.getElementById("z").value;
+    document.getElementById("robotForm").addEventListener("submit", async function (e){
+  e.preventDefault();
+  const x = document.getElementById("x").value;
+  const z = document.getElementById("z").value;
 
-      try {
-        const response = await fetch("/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ x, z }),
-        });
+  // 🧹 Wyczyść logi i komunikat przed nowym startem
+  document.getElementById("logArea").textContent = "";
+  const msgDiv = document.getElementById("message");
+  msgDiv.style.display = "none";
+  msgDiv.textContent = "";
 
-        const result = await response.json();
-        showMessage(result.message, result.status);
-        updateLogs();
-      } catch (err) {
-        showMessage("Błąd połączenia z serwerem", "error");
-      }
+  try {
+    const response = await fetch("/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ x, z }),
     });
+
+    const result = await response.json();
+    showMessage(result.message, result.status);
+  } catch (err) {
+    showMessage("Błąd połączenia z serwerem", "error");
+  }
+});
 
     function showMessage(message, status) {
       const msgDiv = document.getElementById("message");
