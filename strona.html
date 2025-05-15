@@ -20,6 +20,15 @@
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+    #logArea {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -34,6 +43,8 @@
 
   <div id="message"></div>
 
+  <h3>Logi robota:</h3>
+  <pre id="logArea"></pre>
   <script>
     document.getElementById("robotForm").addEventListener("submit", async function (e){
       e.preventDefault();
@@ -60,6 +71,17 @@
       msgDiv.className = status === "success" ? "success" : "error";
       msgDiv.style.display = "block";
     }
+
+    async function updateLogs() {
+      try {
+        const response = await fetch("/logs");
+        const logs = await response.json();
+        document.getElementById("logArea").textContent = logs.join("\n");
+      } catch (err) {
+        console.error("Nie udało się pobrać logów");
+      }
+    }
+    setInterval(updateLogs, 2000);
   </script>
 </body>
 </html>
