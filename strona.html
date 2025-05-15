@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Panel sterowania robotem</title>
+    <script>
+      function validateForm(){
+        const x = document.getElementById("x").value;
+        const z = document.getElementById("z").value;
+        document.getElementById("start").disabled = !(x && z);
+      }
+    </script>
+  </head>
+  <body oninput="validateForm()">
+    <h2>Parametry malowania</h2>
+    <form action="/start" method="post">
+      <label for="x">Długość ściany (x):</label>
+      <input type="number" id="x" name="x" required><br><br>
+      <label for="z">Wysokość ściany (z):</label>
+      <input type="number" id="z" name="z" required><br><br>
+      <button id="start" type="submit" disabled>Start</button>
+    </form>
+  </body>
+</html>
