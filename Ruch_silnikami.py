@@ -19,6 +19,151 @@ ENDSTOP1_PIN = 1     # Endstop start position
 ENDSTOP2_PIN = 2     # Endstop end position 
 ENDSTOP3_PIN = 3     # Endstop Z homming
 
+class PaintSprayer():
+    """
+    Class to handle a servo that presses the spray can in the wall painting robot.
+    
+    Attributes
+    ----------
+    servo_pin : int
+        GPIO pin connected to the servo control wire.
+    pwm : GPIO.PWM
+        PWM object to control the servo.
+    
+    Methods
+    -------
+    press()
+        Presses the spray can.
+    release()
+        Releases the spray can.
+   
+    """
+
+    def __init__(self, servo_pin):
+        self.servo_pin = servo_pin
+        GPIO.setup(self.servo_pin, GPIO.OUT)
+        self.pwm = GPIO.PWM(self.servo_pin, 50)  
+        self.pwm.start(0)
+        sleep(0.5)
+        self.release()
+
+    def press(self):
+        """naciskanie puchy"""
+        self.pwm.ChangeDutyCycle(7.5)  # to jest 90 stopni, dostosuje sie juz przy testach
+        sleep(0.5)
+        self.pwm.ChangeDutyCycle(0)  
+
+    def release(self):
+        """serwo w pozycji zero(poczatkowej)"""
+        self.pwm.ChangeDutyCycle(2.5)  # kat zero stopni
+        sleep(0.5)
+        self.pwm.ChangeDutyCycle(0)
+
+class ScrewMotor():
+    """
+    Class to handle the control of the trapezoidal screw motor.
+    
+    Attributes
+    ----------
+    pin_A : int
+        The GPIO pin for the motor A.
+    pin_B : int
+        The GPIO pin for the motor B.
+    pwm : PWM instance
+        The PWM instance controlling the motor's speed.
+
+    Methods
+    -------
+    move_up(speed)
+        Moves the platform upwards at the specified speed.
+    move_down(speed)
+        Moves the platform downwards at the specified speed.
+    stop()
+        Stops the motor.
+    """
+
+    def __init__(self, pin_A, pin_B):
+       
+        self.pin_A = pin_A
+        self.pin_B = pin_B
+
+        GPIO.setup(pin_A, GPIO.OUT)
+        GPIO.setup(pin_B, GPIO.OUT)
+
+        # Create PWM signal on pin A with 100Hz frequency
+        self.pwm_1 = GPIO.PWM(pin_A, 100)
+        self.pwm_2 = GPIO.PWM(pin_B, 100)
+
+        self.pwm_1.start(0) 
+        self.pwm_2.start(0)  
+
+    def move_up(self, speed):
+        """
+       platforma do gory
+       predkosc (0-100), PWM
+        """
+        GPIO.output(self.pin_B, GPIO.LOW)
+        GPIO.output(self.pin_A, GPIO.HIGH)
+        self.pwm_1.ChangeDutyCycle(speed)
+
+    def move_down(self, speed):
+        """
+        platforma w dół
+
+        """
+        GPIO.output(self.pin_A, GPIO.LOW)
+        GPIO.output(self.pin_B, GPIO.HIGH)
+        self.pwm_2.ChangeDutyCycle(speed)
+
+    def stop(self):
+        """zatrzymuje platforme"""
+
+        self.pwm_1.ChangeDutyCycle(0)
+        self.pwm_2.ChangeDutyCycle(0)
+
+class Platform():
+    """
+    Class to control the movement of the platform on the trapezoidal screw.
+    
+    Attributes
+    ----------
+    screw_motor : ScrewMotor
+        The screw motor controlling the platform's movement.
+    endstop_up : Endstop
+        The endstop for the upward limit.
+    endstop_down : Endstop
+        The endstop for the downward limit.
+    """
+
+    def __init__(self, pin_A, pin_B, endstop_up_pin, endstop_down_pin):
+        """
+        Initializes the platform with the motor
+        
+     
+        """
+        self.screw_motor = ScrewMotor(pin_A, pin_B)
+        self.endstop_up = Endstop(endstop_up_pin)
+        self.endstop_down = Endstop(endstop_down_pin)
+
+    def move_up(self, speed):
+        """Move the platform upwards if the endstop is not triggered."""
+        self.endstop_up.change_detected()
+        if not self.endstop_up.actual_state:  # Ensure the platform has not reached the top
+            self.screw_motor.move_up(speed)
+     
+
+    def move_down(self, speed):
+        """Move the platform downwards if the endstop is not triggered."""
+        self.endstop_down.change_detected()
+        if not self.endstop_down.actual_state:  # Ensure the platform has not reached the bottom
+            self.screw_motor.move_down(speed)
+            
+
+    def stop(self):
+        """Stop the platform's movement."""
+        self.screw_motor.stop()
+        print("Platform stopped.")
+
 
 class Endstop():
     """
