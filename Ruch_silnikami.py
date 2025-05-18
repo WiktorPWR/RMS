@@ -584,7 +584,7 @@ class Robot():
         self.Motor_Left = Motor(M1A, M1B)
         self.Motor_Right = Motor(M2A, M2B)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
-        self.ncoder_floor = Ncoder()
+        self.ncoder_floor = Ncoder(ENKODER_PIN_1, ENKODER_PIN_2)
         self.endstop_floor_1 = Endstop(ENDSTOP1_PIN)
         self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
         self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS)
