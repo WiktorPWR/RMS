@@ -25,6 +25,15 @@ SERVO_PIN = 20
 ENKODER_PIN_1 = 4
 ENKODER_PIN_2 = 5
 
+SLOW_THRESH = 0.5
+MID_THRESH = 1.0
+FAST_THRESH = 2.0
+
+SPEED_SLOW = 10
+SPEED_MID = 20
+SPEED_FAST = 30
+
+
 class Ncoder():
     """
     Class for handling an incremental rotary encoder (e.g. KY-040)
@@ -606,10 +615,10 @@ class Robot():
         try:
             while current_position <= target_position:
 
-                if(self.endstop_floor_1 == True):
+                if self.endstop_floor_1.change_detected():
                     current_position = 0
                     break
-                elif (self.endstop_floor_2 == True):
+                elif self.endstop_floor_2.change_detected():
                     current_position = self.maks_distance
                     break
 
@@ -649,7 +658,7 @@ class Robot():
 
                 # === 6. Update position estimate
                 distance_per_loop = base_speed * self.dt * 0.1  # adjust this factor to your robot
-                current_position = self.ncoder_floor.update_position(distance_per_loop)
+                current_position = self.ncoder_floor.update_position()
                 remaining = target_position - current_distance
 
                 print(f"[INFO] Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}")
