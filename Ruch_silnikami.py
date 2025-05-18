@@ -15,9 +15,112 @@ M1A = 26             # Motor 1 pin A
 M1B = 19             # Motor 1 pin B
 M2A = 13             # Motor 2 pin A
 M2B = 6              # Motor 2 pin B
+MZ1 = 7              # Motor Z pin A
+MZ2 = 8              # Motor Z pin B
 ENDSTOP1_PIN = 1     # Endstop start position 
 ENDSTOP2_PIN = 2     # Endstop end position 
-ENDSTOP3_PIN = 3     # Endstop Z homming
+ENDSTOP3_PIN_MIN = 3     # Endstop Z homming
+ENDSTOP4_PIN_MAKS = 9
+SERVO_PIN = 20
+ENKODER_PIN_1 = 4
+ENKODER_PIN_2 = 5
+
+SLOW_THRESH = 0.5
+MID_THRESH = 1.0
+FAST_THRESH = 2.0
+
+SPEED_SLOW = 10
+SPEED_MID = 20
+SPEED_FAST = 30
+
+
+class Ncoder():
+    """
+    Class for handling an incremental rotary encoder (e.g. KY-040)
+
+    ...
+
+    Attributes
+    ----------
+    pin_a : int
+        GPIO pin connected to encoder channel A (required)
+    pin_b : int or None
+        GPIO pin connected to encoder channel B (optional, used for direction detection)
+    Current_position : int
+        Current number of counted encoder pulses
+    distance_per_tick : float
+        Conversion factor from encoder ticks to distance in centimeters
+
+    Methods
+    -------
+    encoder_callback(channel)
+        Function called on signal change on encoder pin A (interrupt)
+    update_position()
+        Returns the current distance in centimeters
+    reset_counter()
+        Resets the encoder tick counter to zero
+    """
+
+    def __init__(self, pin_a, pin_b=None):
+        """
+        Initializes the encoder using the given GPIO pins
+
+        Parameters
+        ----------
+        pin_a : int
+            GPIO pin number for encoder channel A
+        pin_b : int or None
+            GPIO pin number for encoder channel B (optional)
+        """
+        self.pin_a = pin_a
+        self.pin_b = pin_b
+        self.Current_position = 0
+        self.distance_per_tick = 0.1  # [NOTE] Adjust this value based on real-world testing
+
+        GPIO.setup(self.pin_a, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        if self.pin_b:
+            GPIO.setup(self.pin_b, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        # [INFO] Set up interrupt on both rising and falling edges for pin A
+        GPIO.add_event_detect(self.pin_a, GPIO.BOTH, callback=self.encoder_callback, bouncetime=1)
+
+    def encoder_callback(self, channel):
+        """
+        Interrupt callback for encoder pulse counting
+
+        If channel B is defined, it is used to determine rotation direction.
+        Otherwise, each pulse is counted as forward movement.
+        """
+        if self.pin_b:
+            # [INFO] Direction detection: HIGH = forward, LOW = reverse
+            if GPIO.input(self.pin_b) == GPIO.HIGH:
+                self.Current_position += 1
+            else:
+                self.Current_position -= 1
+        else:
+            # [INFO] No direction detection — assuming forward movement only
+            self.Current_position += 1
+
+    def update_position(self):
+        """
+        Returns the current estimated distance based on encoder pulses
+
+        Returns
+        -------
+        float
+            Distance in centimeters
+        """
+        return self.Current_position * self.distance_per_tick
+
+    def reset_counter(self):
+        """
+        Resets the encoder pulse counter to zero
+
+        This should be used when reaching a known physical reference point,
+        such as a limit switch (endstop).
+        """
+        # [INFO] Reset encoder position to 0 cm
+        self.Current_position = 0
 
 class PaintSprayer():
     """
@@ -144,11 +247,13 @@ class Platform():
         self.screw_motor = ScrewMotor(pin_A, pin_B)
         self.endstop_up = Endstop(endstop_up_pin)
         self.endstop_down = Endstop(endstop_down_pin)
+        self.paint_sprayer = PaintSprayer(SERVO_PIN)
+        self.ncoder = Ncoder(ENKODER_PIN_1,ENKODER_PIN_2)
 
     def move_up(self, speed):
         """Move the platform upwards if the endstop is not triggered."""
         self.endstop_up.change_detected()
-        if not self.endstop_up.actual_state:  # Ensure the platform has not reached the top
+        if not self.endstop_up.change_detected():  # Ensure the platform has not reached the top
             self.screw_motor.move_up(speed)
      
 
@@ -157,13 +262,89 @@ class Platform():
         self.endstop_down.change_detected()
         if not self.endstop_down.actual_state:  # Ensure the platform has not reached the bottom
             self.screw_motor.move_down(speed)
-            
+
+    def move_z_axis(self, distance, paint_or_not=False):
+        """
+        Moves the platform up or down by a specified distance, with acceleration/deceleration.
+        Optionally activates the paint sprayer for the entire movement.
+
+        Parameters
+        ----------
+        distance : float
+            Distance to move the platform in cm (positive = up, negative = down).
+        paint_or_not : bool
+            If True, activates spray during entire movement.
+        dt : float
+            Delay time for loop cycle in seconds.
+        servo_pin : int or None
+            GPIO pin connected to the spray servo (required if paint_or_not=True).
+        """
+
+        direction_up = distance > 0
+        target_distance = abs(distance)
+        current_position = 0.0
+        max_speed = 80     # Max PWM
+        min_speed = 30     # Minimum effective PWM
+        acceleration_zone = 3.0  # cm
+
+        if paint_or_not:
+            self.paint_sprayer.press()
+            print("[SPRAY] Spray activated.")
+
+        try:
+            while current_position < target_distance:
+                remaining = target_distance - current_position
+
+                # Zwalnianie przy końcu
+                if remaining < 0.5:
+                    speed = 0
+                elif remaining < 1.0:
+                    speed = int(max_speed * 0.25)
+                elif remaining < 2.0:
+                    speed = int(max_speed * 0.5)
+                elif remaining < acceleration_zone:
+                    speed = int(max_speed * 0.75)
+                elif current_position < acceleration_zone:
+                    speed = int(max_speed * (current_position / acceleration_zone))
+                else:
+                    speed = max_speed
+
+                speed = max(min_speed, speed)
+
+                if direction_up:
+                    self.endstop_up.change_detected()
+                    if self.endstop_up.change_detected():
+                        print("[STOP] Endstop UP triggered")
+                        break
+                    self.move_up(speed)
+                else:
+                    self.endstop_down.change_detected()
+                    if self.endstop_down.actual_state:
+                        print("[STOP] Endstop DOWN triggered")
+                        break
+                    self.move_down(speed)
+
+                # Estymacja ruchu
+                current_position = self.ncoder.update_position()
+
+                print(f"[Z-MOVE] Pos: {current_position:.2f}/{target_distance:.2f} cm | Spd: {speed}")
+
+        except KeyboardInterrupt:
+            print("[INTERRUPT] Z-axis movement interrupted.")
+
+        finally:
+            self.stop()
+            print("[DONE] Target Z distance reached.")
+            if self.paint_sprayer:
+                self.paint_sprayer.release()
+                print("[SPRAY] Spray released.")
+
+                
 
     def stop(self):
         """Stop the platform's movement."""
         self.screw_motor.stop()
         print("Platform stopped.")
-
 
 class Endstop():
     """
@@ -188,11 +369,10 @@ class Endstop():
         Checks the GPIO pin and updates the actual state of the endstop
     """
     bounce_time = 50
-    actual_state = False
-
     def __init__(self, pin):
 
         self.endstop_pin = pin
+        self.actual_state = False
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     def change_detected(self):
@@ -203,12 +383,7 @@ class Endstop():
         - True if the endstop is triggered (logic LOW)
         - False if the endstop is not triggered (logic HIGH)
         """
-        if not GPIO.input(self.endstop_pin):
-            self.actual_state = True
-        else:
-            self.actual_state = False
-
-
+        return GPIO.input(self.endstop_pin) == self.actual_state
 
 class Ultrasonic_sensor():
     """
@@ -242,11 +417,11 @@ class Ultrasonic_sensor():
         pin_trig : int
             The GPIO pin used for sending the trigger signal.
         """
-        self.pin_echo = pin_echo
         self.pin_trig = pin_trig
-
-        GPIO.setup(self.pin_trig, GPIO.OUT)
-        GPIO.setup(self.pin_echo, GPIO.IN)
+        self.pin_echo = pin_echo
+        GPIO.setup(pin_trig, GPIO.OUT)
+        GPIO.setup(pin_echo, GPIO.IN)
+        GPIO.output(pin_trig, GPIO.LOW)
 
     def get_distance(self):
         """
@@ -257,25 +432,26 @@ class Ultrasonic_sensor():
         float
             The distance to the object in centimeters.
         """
-        # Send a short pulse to trigger the sensor
         GPIO.output(self.pin_trig, GPIO.HIGH)
-        sleep(0.00001)
+        sleep(0.0001)
         GPIO.output(self.pin_trig, GPIO.LOW)
 
-        # Measure pulse duration to calculate distance
+        timeout_start = time() + 0.1
         while GPIO.input(self.pin_echo) == 0:
             pulse_start = time()
+            if pulse_start > timeout_start:
+                return -1
 
+        timeout_end = time() + 0.1
         while GPIO.input(self.pin_echo) == 1:
             pulse_end = time()
+            if pulse_end > timeout_end:
+                return -1
 
         pulse_duration = pulse_end - pulse_start
-
-        # Calculate distance (speed of sound = 34300 cm/s)
         distance = pulse_duration * 34300 / 2
-
         return distance
-
+    
     def filter_signal(self):
         """
         Collects multiple measurements to reduce noise by averaging the values.
@@ -299,7 +475,6 @@ class Ultrasonic_sensor():
         # Return the average of the filtered samples
         distance = sum(filtered_samples) / len(filtered_samples)
         return distance
-
 
 class Motor():
     """
@@ -365,95 +540,6 @@ class Motor():
             self.pwm_2.ChangeDutyCycle(speed)
 
 
-class Ncoder():
-    """
-    Class for handling an incremental rotary encoder (e.g. KY-040)
-
-    ...
-
-    Attributes
-    ----------
-    pin_a : int
-        GPIO pin connected to encoder channel A (required)
-    pin_b : int or None
-        GPIO pin connected to encoder channel B (optional, used for direction detection)
-    Current_position : int
-        Current number of counted encoder pulses
-    distance_per_tick : float
-        Conversion factor from encoder ticks to distance in centimeters
-
-    Methods
-    -------
-    encoder_callback(channel)
-        Function called on signal change on encoder pin A (interrupt)
-    update_position()
-        Returns the current distance in centimeters
-    reset_counter()
-        Resets the encoder tick counter to zero
-    """
-
-    def __init__(self, pin_a, pin_b=None):
-        """
-        Initializes the encoder using the given GPIO pins
-
-        Parameters
-        ----------
-        pin_a : int
-            GPIO pin number for encoder channel A
-        pin_b : int or None
-            GPIO pin number for encoder channel B (optional)
-        """
-        self.pin_a = pin_a
-        self.pin_b = pin_b
-        self.Current_position = 0
-        self.distance_per_tick = 0.1  # [NOTE] Adjust this value based on real-world testing
-
-        GPIO.setup(self.pin_a, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        if self.pin_b:
-            GPIO.setup(self.pin_b, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-        # [INFO] Set up interrupt on both rising and falling edges for pin A
-        GPIO.add_event_detect(self.pin_a, GPIO.BOTH, callback=self.encoder_callback, bouncetime=1)
-
-    def encoder_callback(self, channel):
-        """
-        Interrupt callback for encoder pulse counting
-
-        If channel B is defined, it is used to determine rotation direction.
-        Otherwise, each pulse is counted as forward movement.
-        """
-        if self.pin_b:
-            # [INFO] Direction detection: HIGH = forward, LOW = reverse
-            if GPIO.input(self.pin_b) == GPIO.HIGH:
-                self.Current_position += 1
-            else:
-                self.Current_position -= 1
-        else:
-            # [INFO] No direction detection — assuming forward movement only
-            self.Current_position += 1
-
-    def update_position(self):
-        """
-        Returns the current estimated distance based on encoder pulses
-
-        Returns
-        -------
-        float
-            Distance in centimeters
-        """
-        return self.Current_position * self.distance_per_tick
-
-    def reset_counter(self):
-        """
-        Resets the encoder pulse counter to zero
-
-        This should be used when reaching a known physical reference point,
-        such as a limit switch (endstop).
-        """
-        # [INFO] Reset encoder position to 0 cm
-        self.Current_position = 0
-
-
 class Robot():
     """
     Class representing a robot with two motors and an ultrasonic sensor.
@@ -488,18 +574,20 @@ class Robot():
     max_speed = 100            # Maximum speed (PWM duty cycle)
     dt = 0.1                   # Control loop time step (s)
     target_distance_from_wall = 10  # Desired distance from wall in cm
+    maks_distance = 0
 
-    def __init__(self):
+    def __init__(self,distance_between_floor_endstops):
         """
         Initializes the robot with motors and ultrasonic sensor.
         """
         self.Motor_Left = Motor(M1A, M1B)
         self.Motor_Right = Motor(M2A, M2B)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
-        self.ncoder_floor = Ncoder()
+        self.ncoder_floor = Ncoder(ENKODER_PIN_1, ENKODER_PIN_2)
         self.endstop_floor_1 = Endstop(ENDSTOP1_PIN)
         self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
-        self.endstop_Z_axis = Endstop(ENDSTOP3_PIN)
+        self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS)
+        self.maks_distance = distance_between_floor_endstops
 
     def move_forward(self, distance):
         """
@@ -519,22 +607,31 @@ class Robot():
         error_integral = 0.0
         target_position = abs(distance)  # target travel distance in cm
 
-        self.ncoder_floor.reset_cunter()
+        self.ncoder_floor.reset_counter()
         current_position = 0.0
         self.is_moving = True
 
         try:
-            while current_position < target_position:
+            while current_position <= target_position:
+
+                if self.endstop_floor_1.change_detected():
+                    current_position = 0
+                    break
+                elif self.endstop_floor_2.change_detected():
+                    current_position = self.maks_distance
+                    break
+
                 # === 1. Measure current distance from the wall
                 current_distance = self.ultrasonik_sensor.filter_signal()
 
                 # === 2. PI controller for wall distance
                 error = self.target_distance_from_wall - current_distance
                 error_integral += error * self.dt
-                error_integral = max(-50, min(50, error_integral))
+                error_integral = max(-50, min(50, error_integral))  # antywindup
 
                 base_output = self.Kp * error + self.Ki * error_integral
                 base_speed = min(abs(int(base_output)), self.max_speed)
+
 
                 # === 3. Smooth acceleration
                 acceleration_zone = 3.0  # cm for acceleration
@@ -559,8 +656,9 @@ class Robot():
                 self.Motor_Right.set_speed_motor(not direction, base_speed)
 
                 # === 6. Update position estimate
-                distance_per_loop = base_speed * self.dt * 0.1  # adjust this factor to your robot
-                current_position = self.ncoder_floor.update_position(distance_per_loop)
+              
+                current_position = self.ncoder_floor.update_position()
+                remaining = target_position - current_position
 
                 print(f"[INFO] Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}")
 
@@ -580,8 +678,6 @@ class Robot():
 # Main setup
 
 robot = Robot()
-GPIO.add_event_detect(robot.endstop_floor_1.endstop_pin,GPIO.BOTH,callback=robot.endstop_floor_1.change_detected,bouncetime=robot.endstop_floor_1.bounce_time)
-GPIO.add_event_detect(robot.endstop_floor_2.endstop_pin,GPIO.BOTH,callback=robot.endstop_floor_1.change_detected,bouncetime=robot.endstop_floor_2.bounce_time)
 
 # === Main Test Sequence ===
 
