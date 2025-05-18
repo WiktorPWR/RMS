@@ -15,9 +15,12 @@ M1A = 26             # Motor 1 pin A
 M1B = 19             # Motor 1 pin B
 M2A = 13             # Motor 2 pin A
 M2B = 6              # Motor 2 pin B
+MZ1 = 7              # Motor Z pin A
+MZ2 = 8              # Motor Z pin B
 ENDSTOP1_PIN = 1     # Endstop start position 
 ENDSTOP2_PIN = 2     # Endstop end position 
-ENDSTOP3_PIN = 3     # Endstop Z homming
+ENDSTOP3_PIN_MIN = 3     # Endstop Z homming
+ENDSTOP4_PIN_MAKS = 9
 SERVO_PIN = 20
 ENKODER_PIN_1 = 4
 ENKODER_PIN_2 = 5
@@ -358,11 +361,10 @@ class Endstop():
         Checks the GPIO pin and updates the actual state of the endstop
     """
     bounce_time = 50
-    actual_state = False
-
     def __init__(self, pin):
 
         self.endstop_pin = pin
+        self.actual_state = False
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     def change_detected(self):
@@ -373,10 +375,7 @@ class Endstop():
         - True if the endstop is triggered (logic LOW)
         - False if the endstop is not triggered (logic HIGH)
         """
-        if not GPIO.input(self.endstop_pin):
-            self.actual_state = True
-        else:
-            self.actual_state = False
+        return GPIO.input(self.endstop_pin) == 0
 
 class Ultrasonic_sensor():
     """
@@ -410,11 +409,11 @@ class Ultrasonic_sensor():
         pin_trig : int
             The GPIO pin used for sending the trigger signal.
         """
-        self.pin_echo = pin_echo
         self.pin_trig = pin_trig
-
-        GPIO.setup(self.pin_trig, GPIO.OUT)
-        GPIO.setup(self.pin_echo, GPIO.IN)
+        self.pin_echo = pin_echo
+        GPIO.setup(pin_trig, GPIO.OUT)
+        GPIO.setup(pin_echo, GPIO.IN)
+        GPIO.output(pin_trig, GPIO.LOW)
 
     def get_distance(self):
         """
@@ -425,25 +424,26 @@ class Ultrasonic_sensor():
         float
             The distance to the object in centimeters.
         """
-        # Send a short pulse to trigger the sensor
         GPIO.output(self.pin_trig, GPIO.HIGH)
         sleep(0.0001)
         GPIO.output(self.pin_trig, GPIO.LOW)
 
-        # Measure pulse duration to calculate distance
+        timeout_start = time() + 0.1
         while GPIO.input(self.pin_echo) == 0:
             pulse_start = time()
+            if pulse_start > timeout_start:
+                return -1
 
+        timeout_end = time() + 0.1
         while GPIO.input(self.pin_echo) == 1:
             pulse_end = time()
+            if pulse_end > timeout_end:
+                return -1
 
         pulse_duration = pulse_end - pulse_start
-
-        # Calculate distance (speed of sound = 34300 cm/s)
         distance = pulse_duration * 34300 / 2
-
         return distance
-
+    
     def filter_signal(self):
         """
         Collects multiple measurements to reduce noise by averaging the values.
@@ -578,7 +578,7 @@ class Robot():
         self.ncoder_floor = Ncoder()
         self.endstop_floor_1 = Endstop(ENDSTOP1_PIN)
         self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
-        self.endstop_Z_axis = Endstop(ENDSTOP3_PIN)
+        self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS)
         self.maks_distance = distance_between_floor_endstops
 
     def move_forward(self, distance):
