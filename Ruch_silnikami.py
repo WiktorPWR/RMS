@@ -253,7 +253,7 @@ class Platform():
     def move_up(self, speed):
         """Move the platform upwards if the endstop is not triggered."""
         self.endstop_up.change_detected()
-        if not self.endstop_up.actual_state:  # Ensure the platform has not reached the top
+        if not self.endstop_up.change_detected():  # Ensure the platform has not reached the top
             self.screw_motor.move_up(speed)
      
 
@@ -313,7 +313,7 @@ class Platform():
 
                 if direction_up:
                     self.endstop_up.change_detected()
-                    if self.endstop_up.actual_state:
+                    if self.endstop_up.change_detected():
                         print("[STOP] Endstop UP triggered")
                         break
                     self.move_up(speed)
@@ -345,7 +345,6 @@ class Platform():
         """Stop the platform's movement."""
         self.screw_motor.stop()
         print("Platform stopped.")
-
 
 class Endstop():
     """
@@ -384,6 +383,7 @@ class Endstop():
         - True if the endstop is triggered (logic LOW)
         - False if the endstop is not triggered (logic HIGH)
         """
+        self.actual_state = True
         return GPIO.input(self.endstop_pin) == 0
 
 class Ultrasonic_sensor():
@@ -657,9 +657,9 @@ class Robot():
                 self.Motor_Right.set_speed_motor(not direction, base_speed)
 
                 # === 6. Update position estimate
-                distance_per_loop = base_speed * self.dt * 0.1  # adjust this factor to your robot
+              
                 current_position = self.ncoder_floor.update_position()
-                remaining = target_position - current_distance
+                remaining = target_position - current_position
 
                 print(f"[INFO] Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}")
 
