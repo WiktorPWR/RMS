@@ -61,7 +61,7 @@ class Ncoder():
         Resets the encoder tick counter to zero
     """
 
-    def __init__(self, pin_a, pin_b=None):
+    def __init__(self, status_log, pin_a, pin_b=None):
         """
         Initializes the encoder using the given GPIO pins
 
@@ -72,6 +72,7 @@ class Ncoder():
         pin_b : int or None
             GPIO pin number for encoder channel B (optional)
         """
+        self.status_log = status_log
         self.pin_a = pin_a
         self.pin_b = pin_b
         self.Current_position = 0
@@ -84,6 +85,9 @@ class Ncoder():
         # [INFO] Set up interrupt on both rising and falling edges for pin A
         GPIO.add_event_detect(self.pin_a, GPIO.BOTH, callback=self.encoder_callback, bouncetime=1)
 
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Ncoder]", "message": message, "type": type})
+
     def encoder_callback(self, channel):
         """
         Interrupt callback for encoder pulse counting
@@ -91,6 +95,7 @@ class Ncoder():
         If channel B is defined, it is used to determine rotation direction.
         Otherwise, each pulse is counted as forward movement.
         """
+        
         if self.pin_b:
             # [INFO] Direction detection: HIGH = forward, LOW = reverse
             if GPIO.input(self.pin_b) == GPIO.HIGH:
@@ -100,6 +105,8 @@ class Ncoder():
         else:
             # [INFO] No direction detection — assuming forward movement only
             self.Current_position += 1
+        
+        self.log(f"Actual position: {self.Current_position} cm", "info")  
 
     def update_position(self):
         """
@@ -121,6 +128,7 @@ class Ncoder():
         """
         # [INFO] Reset encoder position to 0 cm
         self.Current_position = 0
+        self.log(f"Reset counter", "info")
 
 class PaintSprayer():
     """
@@ -142,7 +150,8 @@ class PaintSprayer():
    
     """
 
-    def __init__(self, servo_pin):
+    def __init__(self,status_log, servo_pin):
+        self.status_log = status_log
         self.servo_pin = servo_pin
         GPIO.setup(self.servo_pin, GPIO.OUT)
         self.pwm = GPIO.PWM(self.servo_pin, 50)  
@@ -150,14 +159,20 @@ class PaintSprayer():
         sleep(0.5)
         self.release()
 
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[PaintSprayer]", "message": message, "type": type})
+
     def press(self):
         """naciskanie puchy"""
+        self.log(f"Naciskanie puchy", "info")
         self.pwm.ChangeDutyCycle(7.5)  # to jest 90 stopni, dostosuje sie juz przy testach
         sleep(0.5)
         self.pwm.ChangeDutyCycle(0)  
 
+
     def release(self):
         """serwo w pozycji zero(poczatkowej)"""
+        self.log(f"Puszczenie puchy","info")
         self.pwm.ChangeDutyCycle(2.5)  # kat zero stopni
         sleep(0.5)
         self.pwm.ChangeDutyCycle(0)
@@ -185,8 +200,8 @@ class ScrewMotor():
         Stops the motor.
     """
 
-    def __init__(self, pin_A, pin_B):
-       
+    def __init__(self, status_log, pin_A, pin_B):
+        self.status_log = status_log
         self.pin_A = pin_A
         self.pin_B = pin_B
 
@@ -200,11 +215,15 @@ class ScrewMotor():
         self.pwm_1.start(0) 
         self.pwm_2.start(0)  
 
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[ScrewMotor]", "message": message, "type": type})
+
     def move_up(self, speed):
         """
        platforma do gory
        predkosc (0-100), PWM
         """
+        self.log(f"We go down with speed {speed}", "info")
         GPIO.output(self.pin_B, GPIO.LOW)
         GPIO.output(self.pin_A, GPIO.HIGH)
         self.pwm_1.ChangeDutyCycle(speed)
@@ -214,13 +233,14 @@ class ScrewMotor():
         platforma w dół
 
         """
+        self.log(f"We go up with speed {speed}", "info")
         GPIO.output(self.pin_A, GPIO.LOW)
         GPIO.output(self.pin_B, GPIO.HIGH)
         self.pwm_2.ChangeDutyCycle(speed)
 
     def stop(self):
         """zatrzymuje platforme"""
-
+        self.log(f"We STOP", "warning")
         self.pwm_1.ChangeDutyCycle(0)
         self.pwm_2.ChangeDutyCycle(0)
 
@@ -238,17 +258,21 @@ class Platform():
         The endstop for the downward limit.
     """
 
-    def __init__(self, pin_A, pin_B, endstop_up_pin, endstop_down_pin):
+    def __init__(self,status_log, pin_A, pin_B, endstop_up_pin, endstop_down_pin):
         """
         Initializes the platform with the motor
         
      
         """
+        self.status_log = status_log
         self.screw_motor = ScrewMotor(pin_A, pin_B)
         self.endstop_up = Endstop(endstop_up_pin)
         self.endstop_down = Endstop(endstop_down_pin)
         self.paint_sprayer = PaintSprayer(SERVO_PIN)
         self.ncoder = Ncoder(ENKODER_PIN_1,ENKODER_PIN_2)
+
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Platform]", "message": message, "type": type})
 
     def move_up(self, speed):
         """Move the platform upwards if the endstop is not triggered."""
@@ -289,7 +313,6 @@ class Platform():
 
         if paint_or_not:
             self.paint_sprayer.press()
-            print("[SPRAY] Spray activated.")
 
         try:
             while current_position < target_distance:
@@ -314,30 +337,30 @@ class Platform():
                 if direction_up:
                     self.endstop_up.change_detected()
                     if self.endstop_up.change_detected():
-                        print("[STOP] Endstop UP triggered")
+                        self.log(f"Endstop up detected", "warning") 
                         break
                     self.move_up(speed)
                 else:
                     self.endstop_down.change_detected()
                     if self.endstop_down.actual_state:
-                        print("[STOP] Endstop DOWN triggered")
+                        self.log(f"Endstop down detected", "warning") 
                         break
                     self.move_down(speed)
 
                 # Estymacja ruchu
                 current_position = self.ncoder.update_position()
 
-                print(f"[Z-MOVE] Pos: {current_position:.2f}/{target_distance:.2f} cm | Spd: {speed}")
+                self.log(f"Pos: {current_position:.2f}/{target_distance:.2f} cm | Spd: {speed}", "info")
 
         except KeyboardInterrupt:
-            print("[INTERRUPT] Z-axis movement interrupted.")
+            print(" Z-axis movement interrupted.")
 
         finally:
             self.stop()
-            print("[DONE] Target Z distance reached.")
+            self.log("Target Z distance reached.","succes")
             if self.paint_sprayer:
                 self.paint_sprayer.release()
-                print("[SPRAY] Spray released.")
+                self.log(" Spray released.","info")
 
                 
 
@@ -369,12 +392,15 @@ class Endstop():
         Checks the GPIO pin and updates the actual state of the endstop
     """
     bounce_time = 50
-    def __init__(self, pin):
-
+    def __init__(self,status_log, pin):
+        self.status_log = status_log
         self.endstop_pin = pin
         self.actual_state = False
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Endstop]", "message": message, "type": type})
+
     def change_detected(self):
         """
         Detects the current state of the endstop
@@ -383,6 +409,7 @@ class Endstop():
         - True if the endstop is triggered (logic LOW)
         - False if the endstop is not triggered (logic HIGH)
         """
+        self.log("Endstop change state","warning")
         return GPIO.input(self.endstop_pin) == self.actual_state
 
 class Ultrasonic_sensor():
@@ -406,7 +433,7 @@ class Ultrasonic_sensor():
         Performs multiple measurements and returns the filtered average distance to reduce noise.
     """
 
-    def __init__(self, pin_echo, pin_trig):
+    def __init__(self,status_log, pin_echo, pin_trig):
         """
         Initializes the ultrasonic sensor with the given ECHO and TRIG pin numbers.
 
@@ -417,11 +444,15 @@ class Ultrasonic_sensor():
         pin_trig : int
             The GPIO pin used for sending the trigger signal.
         """
+        self.status_log = status_log
         self.pin_trig = pin_trig
         self.pin_echo = pin_echo
         GPIO.setup(pin_trig, GPIO.OUT)
         GPIO.setup(pin_echo, GPIO.IN)
         GPIO.output(pin_trig, GPIO.LOW)
+
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Ultrasonic_sensor]", "message": message, "type": type})
 
     def get_distance(self):
         """
@@ -474,6 +505,7 @@ class Ultrasonic_sensor():
 
         # Return the average of the filtered samples
         distance = sum(filtered_samples) / len(filtered_samples)
+        self.log("Aktual distance from the wall: {distance}","info")
         return distance
 
 class Motor():
@@ -494,7 +526,7 @@ class Motor():
         Sets the motor's speed and direction.
     """
 
-    def __init__(self, pin_A, pin_B):
+    def __init__(self,status_log, pin_A, pin_B):
         """
         Initializes the motor with two GPIO pins for direction control.
 
@@ -505,6 +537,7 @@ class Motor():
         pin_B : int
             The GPIO pin used for motor B.
         """
+        self.status_log = status_log
         self.pin_A = pin_A
         self.pin_B = pin_B
 
@@ -516,6 +549,9 @@ class Motor():
 
         self.pwm_1.start(0)  # Start with 0% duty cycle
         self.pwm_2.start(0)  # Start with 0% duty cycle
+
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Motor]", "message": message, "type": type})
 
     def set_speed_motor(self, direction, speed):
         """
@@ -538,6 +574,7 @@ class Motor():
             GPIO.output(self.pin_A, GPIO.LOW)
             GPIO.output(self.pin_B, GPIO.HIGH)
             self.pwm_2.ChangeDutyCycle(speed)
+        self.log("MOve motor with speed {speed} ","info")
 
 
 class Robot():
@@ -576,10 +613,11 @@ class Robot():
     target_distance_from_wall = 10  # Desired distance from wall in cm
     maks_distance = 0
 
-    def __init__(self,distance_between_floor_endstops):
+    def __init__(self,status_log,distance_between_floor_endstops):
         """
         Initializes the robot with motors and ultrasonic sensor.
         """
+        self.status_log = status_log
         self.Motor_Left = Motor(M1A, M1B)
         self.Motor_Right = Motor(M2A, M2B)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
@@ -588,6 +626,9 @@ class Robot():
         self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
         self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS)
         self.maks_distance = distance_between_floor_endstops
+
+    def log(self, message, type="success"):
+        self.status_log.append({"source": "[Robot]", "message": message, "type": type})
 
     def move_forward(self, distance):
         """
@@ -660,7 +701,7 @@ class Robot():
                 current_position = self.ncoder_floor.update_position()
                 remaining = target_position - current_position
 
-                print(f"[INFO] Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}")
+                self.status_log(f"Pos: {current_position:.2f} cm | Rem: {remaining:.2f} cm | Spd: {base_speed} | Moving: {self.is_moving}", "info")
 
                 sleep(self.dt)
 
@@ -671,7 +712,7 @@ class Robot():
             self.Motor_Left.set_speed_motor(True, 0)
             self.Motor_Right.set_speed_motor(True, 0)
             self.is_moving = False
-            print("[DONE] Target distance reached.")
+            self.status_log("Target distance reached.","success")
 
 
 
