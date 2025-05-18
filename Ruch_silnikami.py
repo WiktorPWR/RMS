@@ -383,8 +383,7 @@ class Endstop():
         - True if the endstop is triggered (logic LOW)
         - False if the endstop is not triggered (logic HIGH)
         """
-        self.actual_state = True
-        return GPIO.input(self.endstop_pin) == 0
+        return GPIO.input(self.endstop_pin) == self.actual_state
 
 class Ultrasonic_sensor():
     """
