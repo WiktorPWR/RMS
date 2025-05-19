@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel sterowania silnikami</title>
+  <style>
+    body { background-color: #121212; color: #f1f1f1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; margin: 0; }
+    h2, h3 { color: #ffffff; }
+    form { background-color: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); max-width: 400px; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    input[type="number"] { width: 100%; padding: 8px; border: none; border-radius: 5px; margin-bottom: 16px; background-color: #2a2a2a; color: #f1f1f1; }
+    button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+    button:hover { background-color: #45a049; }
+    #message { margin-top: 20px; padding: 10px; display: none; border-radius: 5px; }
+    #message.success { background-color: #2e7d32; color: #dcedc8; }
+    #message.error   { background-color: #c62828; color: #ffcdd2; }
+    #logArea { margin-top: 20px; padding: 10px; background-color: #1c1c1c; border-radius: 8px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.9em; }
+    .log-entry { margin-bottom: 6px; white-space: pre-wrap; }
+    .log-success { color: #81c784; }
+    .log-error { color: #ef5350; }
+    .log-info { color: #ffffff; }
+    .log-warning { color: #ffa726; }
+  </style>
+</head>
+<body>
+  <h2>Panel sterowania silnikami</h2>
+  <form id="robotForm">
+    <label for="x">Długość ruchu (X):</label>
+    <input type="number" id="x" name="x" required />
+    <label for="z">Parametr Z:</label>
+    <input type="number" id="z" name="z" required />
+    <button id="start" type="submit">Start</button>
+  </form>
+  <div id="message"></div>
+  <h3>Logi systemu:</h3>
+  <div id="logArea"></div>
+  <script>
+    document.getElementById("robotForm").addEventListener("submit", async function (e){
+      e.preventDefault();
+      const x = document.getElementById("x").value;
+      const z = document.getElementById("z").value;
+      document.getElementById("logArea").textContent = "";
+      const msgDiv = document.getElementById("message");
+      msgDiv.style.display = "none";
+      msgDiv.textContent = "";
+      try {
+        const response = await fetch("/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ x, z }),
+        });
+        const result = await response.json();
+        showMessage(result.message, result.status);
+      } catch (err) {
+        showMessage("Błąd połączenia z serwerem", "error");
+      }
+    });
+
+    function showMessage(message, status) {
+      const msgDiv = document.getElementById("message");
+      msgDiv.textContent = message;
+      msgDiv.className = status === "success" ? "success" : "error";
+      msgDiv.style.display = "block";
+    }
+
+    async function updateLogs() {
+      try {
+        const response = await fetch("/logs");
+        const logs = await response.json();
+        const logArea = document.getElementById("logArea");
+        logArea.innerHTML = "";
+        logs.forEach(log => {
+          const entry = document.createElement("div");
+          entry.className = `log-entry log-${log.type}`;
+          entry.textContent = `[${log.source}] ${log.message}`;
+          logArea.appendChild(entry);
+        });
+      } catch (err) {
+        console.error("Nie udało się pobrać logów");
+      }
+    }
+    setInterval(updateLogs, 2000);
+  </script>
+</body>
+</html>
