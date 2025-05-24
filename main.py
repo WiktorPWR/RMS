@@ -20,25 +20,7 @@ robot = Robot()
 
 try:
     while True:
-        print("Przód")
-        robot.Motor_Left.set_speed_motor(True, 70)
-        robot.Motor_Right.set_speed_motor(True, 70)
-        sleep(2)
-
-        print("Stop")
-        robot.Motor_Left.set_speed_motor(True, 0)
-        robot.Motor_Right.set_speed_motor(True, 0)
-        sleep(1)
-
-        print("Tył")
-        robot.Motor_Left.set_speed_motor(False, 70)
-        robot.Motor_Right.set_speed_motor(False, 70)
-        sleep(2)
-
-        print("Stop")
-        robot.Motor_Left.set_speed_motor(False, 0)
-        robot.Motor_Right.set_speed_motor(False, 0)
-        sleep(3)
+        mariusz = 2
 
 except KeyboardInterrupt:
     GPIO.cleanup()

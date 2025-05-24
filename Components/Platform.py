@@ -1,6 +1,10 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
-import constans
+from constans import SERVO_PIN,ENKODER_PIN_1,ENKODER_PIN_2
+import ScrewMotor
+import Endstop
+import PaintSprayer
+import Ncoder
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
