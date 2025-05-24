@@ -5,45 +5,380 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel sterowania silnikami</title>
   <style>
-    body { background-color: #121212; color: #f1f1f1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; margin: 0; }
-    h2, h3 { color: #ffffff; }
-    form { background-color: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); max-width: 400px; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; }
-    input[type="number"] { width: 100%; padding: 8px; border: none; border-radius: 5px; margin-bottom: 16px; background-color: #2a2a2a; color: #f1f1f1; }
-    button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
-    button:hover { background-color: #45a049; }
-    #message { margin-top: 20px; padding: 10px; display: none; border-radius: 5px; }
+    body {
+      background-color: #121212;
+      color: #f1f1f1;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2, h3 {
+      color: #ffffff;
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 2.2em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+      margin-top: 10px;
+      color: #4CAF50;
+      text-shadow: 0 2px 12px #000a, 0 1px 0 #222;
+      position: relative;
+    }
+
+    .main-title .icon {
+      font-size: 1.1em;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    form {
+      background-color: #1e1e1e;
+      padding: 36px 32px;
+      border-radius: 16px;
+      box-shadow: 0 0 18px rgba(0,0,0,0.5);
+      max-width: 480px;
+      min-width: 260px;
+      font-size: 1.18em;
+      margin: 0 auto 24px auto;   
+      display: flex;
+      flex-direction: column;
+      align-items: center;        
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 16px 14px;
+      border: none;
+      border-radius: 7px;
+      margin-bottom: 20px;
+      background-color: #2a2a2a;
+      color: #f1f1f1;
+      font-size: 1.15em;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .input-arrow-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .input-arrow-group input[type="number"] {
+      flex: 1 1 60px;
+      text-align: center;
+      margin-bottom: 0;
+    }
+
+    .arrow-btn {
+      background: #232323;
+      color: #4CAF50;
+      border: 2px solid #4CAF50;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 1.3em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      outline: none;
+    }
+
+    .arrow-btn:hover {
+      background: #4CAF50;
+      color: #fff;
+      border-color: #81c784;
+      transform: scale(1.08);
+    }
+
+    #message {
+      margin-top: 20px;
+      padding: 10px;
+      display: none;
+      border-radius: 5px;
+    }
+
     #message.success { background-color: #2e7d32; color: #dcedc8; }
     #message.error   { background-color: #c62828; color: #ffcdd2; }
-    #logArea { margin-top: 20px; padding: 10px; background-color: #1c1c1c; border-radius: 8px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.9em; }
-    .log-entry { margin-bottom: 6px; white-space: pre-wrap; }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 32px;
+      border: none;
+      background: none;
+    }
+
+    .tab-btn {
+      background: #232323;
+      color: #4CAF50;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 38px;
+      font-size: 1.15em;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 0 2px;
+      box-shadow: 0 2px 12px #0003;
+      transition: 
+        background 0.25s,
+        color 0.2s,
+        box-shadow 0.2s,
+        transform 0.15s;
+      outline: none;
+      position: relative;
+      top: 0;
+    }
+
+    .tab-btn.active, .tab-btn:focus {
+      background: linear-gradient(90deg, #4CAF50 60%, #388e3c 100%);
+      color: #fff;
+      box-shadow: 0 4px 18px #4caf5040;
+      transform: scale(1.06);
+      z-index: 2;
+    }
+
+    .tab-btn:not(.active):hover {
+      background: #333;
+      color: #fff176;
+      transform: scale(1.03);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .gallery-section {
+      margin-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .gallery-section h4 {
+      color: #fff176;
+      margin-bottom: 10px;
+      margin-top: 18px;
+      font-size: 1.15em;
+      text-align: center;
+    }
+    .gallery-grid {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .gallery-thumb {
+      width: 300px;
+      height: 400px;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px #0007;
+      border: 2px solid #4CAF50;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, z-index 0.2s;
+      z-index: 1;
+    }
+    .gallery-thumb:hover {
+      transform: scale(1.1) translateY(-8px);
+      box-shadow: 0 8px 32px #4caf5077;
+      z-index: 2;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(18,18,18,0.92);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 8px 40px #000c;
+      border: 4px solid #4CAF50;
+    }
+    .modal.active { display: flex; }
+
+    #logArea {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #1c1c1c;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.9em;
+      opacity: 0.6;
+    }
+
+    .log-entry {
+      margin-bottom: 6px;
+      white-space: pre-wrap;
+    }
+
     .log-success { color: #81c784; }
     .log-error { color: #ef5350; }
     .log-info { color: #ffffff; }
     .log-warning { color: #ffa726; }
+
+    .logs-title {
+      color: #244d25;
+      font-size: 1.35em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 2px 8px #0006;
+    }
+
+    .logs-icon {
+      font-size: 1.2em;
+      vertical-align: middle;
+      opacity: 0.6;
+    }
+
+    #historyArea {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #1c1c1c;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.95em;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
-  <h2>Panel sterowania silnikami</h2>
-  <form id="robotForm">
-    <label for="x">Długość ruchu (X):</label>
-    <input type="number" id="x" name="x" required />
-    <label for="z">Parametr Z:</label>
-    <input type="number" id="z" name="z" required />
-    <button id="start" type="submit">Start</button>
-  </form>
-  <div id="message"></div>
-  <h3>Logi systemu:</h3>
-  <div id="logArea"></div>
+  <h2 class="main-title">
+    <span class="icon">⚙️</span>
+    Panel sterowania <span class="highlight">silnikami</span>
+    <span class="icon">⚙️</span>
+  </h2>
+
+  <nav class="tabs">
+    <button class="tab-btn active" onclick="showTab('panel')">Panel sterowania</button>
+    <button class="tab-btn" onclick="showTab('gallery')">Galeria</button>
+    <button class="tab-btn" onclick="showTab('history')">Historia</button>
+  </nav>
+
+  <div id="panel" class="tab-content" style="display:block;">
+    <form id="robotForm">
+      <label for="x">Długość ruchu (X):</label>
+      <div class="input-arrow-group">
+        <button type="button" class="arrow-btn" onclick="changeValue('x', -10)">▼</button>
+        <input type="number" id="x" name="x" required min="1" value="1" />
+        <button type="button" class="arrow-btn" onclick="changeValue('x', 10)">▲</button>
+      </div>
+      <label for="z">Parametr Z:</label>
+      <div class="input-arrow-group">
+        <button type="button" class="arrow-btn" onclick="changeValue('z', -10)">▼</button>
+        <input type="number" id="z" name="z" required min="1" value="1" />
+        <button type="button" class="arrow-btn" onclick="changeValue('z', 10)">▲</button>
+      </div>
+      <div class="button-row">
+        <button id="start" type="submit">Start</button>
+        <button id="calibrate" type="button">Kalibracja</button>
+      </div>
+    </form> 
+
+    <div id="message"></div>
+
+    <h3 class="logs-title"><span class="logs-icon">📋</span> Logi systemu</h3>
+    <div id="logArea"></div>
+    <div class="button-row">
+      <button id="reset-logs" type="button">Reset logów</button>
+    </div>  
+  </div>
+
+  <div id="gallery" class="tab-content" style="display:none;">
+    <div class="gallery-section">
+      <h4>Projekt 3D</h4>
+      <div class="gallery-grid">
+        <img src="{{ url_for('static', filename='robot1.png') }}" alt="Projekt 3D 1" class="gallery-thumb" onclick="openModal(this.src)">
+        <img src="{{ url_for('static', filename='robot2.png') }}" alt="Projekt 3D 2" class="gallery-thumb" onclick="openModal(this.src)">
+      </div>
+    </div>
+    <div class="gallery-section">
+      <h4>Konstrukcja</h4>
+      <div class="gallery-grid">
+        <!-- Dodaj zdjęcia konstrukcji jeśli chcesz -->
+      </div>
+    </div>
+  </div>
+
+  <!-- powiększanie zdjęć -->
+  <div id="modal" class="modal" onclick="closeModal()">
+    <img id="modal-img" src="" alt="Podgląd zdjęcia">
+  </div>
+
+  <div id="history" class="tab-content" style="display:none;">
+    <h3 class="logs-title"><span class="logs-icon">🕓</span> Historia wykonań</h3>
+    <div id="historyArea"></div>
+  </div>
+
   <script>
+    // Obsługa formularza i przycisków
     document.getElementById("robotForm").addEventListener("submit", async function (e){
       e.preventDefault();
       const x = document.getElementById("x").value;
       const z = document.getElementById("z").value;
+
       document.getElementById("logArea").textContent = "";
       const msgDiv = document.getElementById("message");
       msgDiv.style.display = "none";
       msgDiv.textContent = "";
+
       try {
         const response = await fetch("/start", {
           method: "POST",
@@ -57,6 +392,44 @@
       }
     });
 
+    document.getElementById("calibrate").addEventListener("click", async function () {
+      document.getElementById("logArea").textContent = "";
+      const msgDiv = document.getElementById("message");
+      msgDiv.style.display = "none";
+      msgDiv.textContent = "";
+
+      try {
+        const response = await fetch("/calibrate", { method: "POST" });
+        const result = await response.json();
+        showMessage(result.message, result.status);
+      } catch (err) {
+        showMessage("Błąd połączenia z serwerem (kalibracja)", "error");
+      }
+    });
+
+    document.getElementById("reset-logs").addEventListener("click", async function () {
+      try {
+        const response = await fetch("/reset_logs", { method: "POST" });
+        if (response.ok) {
+          document.getElementById("logArea").textContent = "";
+          showMessage("Logi zostały wyczyszczone.", "success");
+        } else {
+          showMessage("Błąd podczas czyszczenia logów.", "error");
+        }
+      } catch (err) {
+        showMessage("Błąd połączenia z serwerem (reset logów)", "error");
+      }
+    });
+
+    // Funkcje pomocnicze
+    function changeValue(field, delta) {
+      const input = document.getElementById(field);
+      let value = parseInt(input.value) || 0;
+      value += delta;
+      if (value < 1) value = 1;
+      input.value = value;
+    }
+
     function showMessage(message, status) {
       const msgDiv = document.getElementById("message");
       msgDiv.textContent = message;
@@ -64,12 +437,31 @@
       msgDiv.style.display = "block";
     }
 
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.getElementById(tab).style.display = 'block';
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick="showTab(\''+tab+'\')"]').classList.add('active');
+    }
+
+    // Modal do galerii
+    function openModal(src) {
+      document.getElementById('modal-img').src = src;
+      document.getElementById('modal').classList.add('active');
+    }
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+    }
+
+    // Aktualizacja logów i historii
     async function updateLogs() {
       try {
         const response = await fetch("/logs");
         const logs = await response.json();
+
         const logArea = document.getElementById("logArea");
         logArea.innerHTML = "";
+
         logs.forEach(log => {
           const entry = document.createElement("div");
           entry.className = `log-entry log-${log.type}`;
@@ -80,7 +472,33 @@
         console.error("Nie udało się pobrać logów");
       }
     }
+
+    async function updateHistory() {
+      try {
+        const response = await fetch("/history");
+        const history = await response.json();
+
+        const historyArea = document.getElementById("historyArea");
+        historyArea.innerHTML = "";
+
+        if (history.length === 0) {
+          historyArea.innerHTML = "<div style='color:#888'>Brak historii wykonań.</div>";
+          return;
+        }
+
+        history.forEach(entry => {
+          const div = document.createElement("div");
+          div.className = "log-entry log-info";
+          div.textContent = `[${entry.time}] X=${entry.x}, Z=${entry.z} | ${entry.status}`;
+          historyArea.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Nie udało się pobrać historii");
+      }
+    }
+
     setInterval(updateLogs, 2000);
+    setInterval(updateHistory, 3000);
   </script>
 </body>
 </html>

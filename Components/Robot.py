@@ -1,5 +1,5 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
-import constans
+from constans import M1A,M1B,M2A,M2B,ECHO_PIN,TRIG_PIN,ENDSTOP1_PIN,ENDSTOP2_PIN,ENKODER_PIN_1,ENKODER_PIN_2,MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS
 import Endstop
 import Motor
 import Ncoder
