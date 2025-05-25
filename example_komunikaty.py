@@ -54,3 +54,44 @@ def start():
     Thread(target=run_robot).start()
     flash("Robot rozpoczął pracę", "success")
     return redirect(url_for('index'))
+
+
+
+#----------------------------------------------------------------------
+#main
+
+class MAIN():
+    
+    def praca_robot(self, x,z)
+    
+    def move_z_axis(self, distance, paint_or_not=False):
+    i = [0, 10, 20]
+    for.......
+    
+        def move_z_axis(self, -i, paint_or_not=False):
+            delay
+        def press(self):
+        def move_forward(self, (parzyste nieparzyste +/-)distance):
+        def release(self):
+        
+
+#--------------------------------------------------------------------
+#panel.py
+
+    def run_robot():
+        log("Robot", f"Malowanie rozpoczęte: X={x} cm, Z={z} cm", "info")
+        # Przykładowe wywołania metod i logowanie (odkomentować i dostosować po integracji)
+        # main.praca_robot(x,z)
+        log("Robot", "Zakończono malowanie", "success")
+        # Dodaj wpis do historii
+        history_log.append({
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "x": x,
+            "z": z,
+            "status": "Zakończono malowanie"
+        })
+
+
+
+
+
