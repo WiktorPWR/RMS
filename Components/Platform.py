@@ -53,7 +53,7 @@ class Platform():
         if not self.endstop_down.actual_state:  # Ensure the platform has not reached the bottom
             self.screw_motor.move_down(speed)
 
-    def move_z_axis(self, distance, paint_or_not=False):
+    def move_z_axis(self, distance):
         """
         Moves the platform up or down by a specified distance, with acceleration/deceleration.
         Optionally activates the paint sprayer for the entire movement.
@@ -76,9 +76,6 @@ class Platform():
         max_speed = 80     # Max PWM
         min_speed = 30     # Minimum effective PWM
         acceleration_zone = 3.0  # cm
-
-        if paint_or_not:
-            self.paint_sprayer.press()
 
         try:
             while current_position < target_distance:
@@ -124,9 +121,7 @@ class Platform():
         finally:
             self.stop()
             self.log("Target Z distance reached.","succes")
-            if self.paint_sprayer:
-                self.paint_sprayer.release()
-                self.log(" Spray released.","info")
+
 
                 
 

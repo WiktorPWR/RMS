@@ -65,7 +65,7 @@ class Robot():
     def log(self, message, type="success"):
         self.status_log.append({"source": "[Robot]", "message": message, "type": type})
 
-    def move_forward(self, distance):
+    def move_forward(self, distance,paint_or_not=False):
         """
         Moves the robot forward or backward while adjusting its speed to maintain a target distance from the wall.
         Includes smooth acceleration and deceleration. The movement is controlled using a PI system.
@@ -82,7 +82,7 @@ class Robot():
         direction = True if distance >= 0 else False
         error_integral = 0.0
         target_position = abs(distance)  # target travel distance in cm
-
+        constans_speed = False
         self.ncoder_floor.reset_counter()
         current_position = 0.0
         self.is_moving = True
@@ -127,6 +127,15 @@ class Robot():
                     else:
                         base_speed = int(base_speed * 0.75)
 
+                if current_position >= acceleration_zone and current_position < remaining:
+                    constans_speed = True
+                else:
+                    constans_speed = False
+                
+                if paint_or_not and constans_speed:
+                    self.paint_sprayer.press()
+                elif paint_or_not and not constans_speed:
+                    self.paint_sprayer.release()
                 # === 5. Apply to motors
                 self.Motor_Left.set_speed_motor(direction, base_speed)
                 self.Motor_Right.set_speed_motor(not direction, base_speed)
