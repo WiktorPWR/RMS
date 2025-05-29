@@ -1,5 +1,5 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
-import constans
+import Components.constans
 from time import sleep, time     # Import sleep for delays and time for timestamps
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
