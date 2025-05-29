@@ -1,12 +1,12 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
-from constans import M1A,M1B,M2A,M2B,ECHO_PIN,TRIG_PIN,ENDSTOP1_PIN,ENDSTOP2_PIN,ENKODER_PIN_1,ENKODER_PIN_2,MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS
-import Endstop
-import Motor
-import Ncoder
-import PaintSprayer
-import Platform
-import ScrewMotor
-import Ultrasonic_sensor
+from Components.constans import M1A,M1B,M2A,M2B,ECHO_PIN,TRIG_PIN,ENDSTOP1_PIN,ENDSTOP2_PIN,ENKODER_PIN_1,ENKODER_PIN_2,MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS
+from Components.Endstop import Endstop
+from Components.Motor import Motor
+from Components.Ncoder import Ncoder
+from Components.PaintSprayer import PaintSprayer
+from Components.Platform import Platform
+from Components.ScrewMotor import ScrewMotor
+from Components.Ultrasonic_sensor import Ultrasonic_sensor
 from time import sleep, time     # Import sleep for delays and time for timestamps
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
@@ -48,18 +48,18 @@ class Robot():
     target_distance_from_wall = 10  # Desired distance from wall in cm
     maks_distance = 0
 
-    def __init__(self,status_log,distance_between_floor_endstops):
+    def __init__(self,distance_between_floor_endstops,status_log):
         """
         Initializes the robot with motors and ultrasonic sensor.
         """
         self.status_log = status_log
-        self.Motor_Left = Motor(M1A, M1B)
-        self.Motor_Right = Motor(M2A, M2B)
-        self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN)
-        self.ncoder_floor = Ncoder(ENKODER_PIN_1, ENKODER_PIN_2)
-        self.endstop_floor_1 = Endstop(ENDSTOP1_PIN)
-        self.endstop_floor_2 = Endstop(ENDSTOP2_PIN)
-        self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS)
+        self.Motor_Left = Motor(M1A, M1B, status_log)
+        self.Motor_Right = Motor(M2A, M2B, status_log)
+        self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN, status_log)
+        self.ncoder_floor = Ncoder(ENKODER_PIN_1, ENKODER_PIN_2, status_log)
+        self.endstop_floor_1 = Endstop(ENDSTOP1_PIN, status_log)
+        self.endstop_floor_2 = Endstop(ENDSTOP2_PIN, status_log)
+        self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS, status_log)
         self.maks_distance = distance_between_floor_endstops
 
     def log(self, message, type="success"):
