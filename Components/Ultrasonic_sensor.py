@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
-import constans
+from Components import constans
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -27,7 +27,7 @@ class Ultrasonic_sensor():
         Performs multiple measurements and returns the filtered average distance to reduce noise.
     """
 
-    def __init__(self,status_log, pin_echo, pin_trig):
+    def __init__(self, pin_echo, pin_trig,status_log):
         """
         Initializes the ultrasonic sensor with the given ECHO and TRIG pin numbers.
 
