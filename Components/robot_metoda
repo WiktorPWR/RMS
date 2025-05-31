@@ -1,0 +1,30 @@
+def homming(self):
+    """
+    Performs homming procedure to reset and calibrate the robot's position
+    based on endstop sensors. First calibrates vertical axis, then horizontal axis.
+    """
+    self.log("Starting homming procedure...", "info")
+
+    # Homming Z-axis (vertical) - move platform up to upper endstop
+    self.log("Homing Z-axis: moving up", "info")
+    self.platform.move_up(speed=50)  # Zakładam, że masz taką metodę
+    while not self.platform.is_top_endstop_triggered():
+        sleep(0.05)  # mały delay, by nie blokować CPU
+    self.platform.stop()
+    self.platform.ncoder.reset_position()
+    self.platform.ncoder.set_position(self.platform.max_height)  # np. 100 cm
+    self.log(f"Platform Z homed at {self.platform.max_height} cm", "success")
+
+    # Homming X-axis (horizontal) - move back until rear endstop triggers
+    self.log("Homing X-axis: moving back", "info")
+    self.Motor_Left.set_speed_motor(False, 30)   # False = do tyłu
+    self.Motor_Right.set_speed_motor(True, 30)   # True = do tyłu
+    while not self.endstop_floor_1.is_triggered():
+        sleep(0.05)
+    self.Motor_Left.set_speed_motor(True, 0)     # zatrzymaj
+    self.Motor_Right.set_speed_motor(True, 0)
+    self.ncoder_floor.reset_counter()
+    self.ncoder_floor.set_position(0)
+    self.log("Floor X homed at 0 cm", "success")
+
+    self.log("Homming procedure completed successfully.", "success")
