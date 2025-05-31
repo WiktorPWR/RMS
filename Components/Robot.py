@@ -65,6 +65,40 @@ class Robot():
     def log(self, message, type="success"):
         self.status_log.append({"source": "[Robot]", "message": message, "type": type})
 
+    def homming(self):
+    """
+    Homming dla osi Z i osi XY.
+    Oś Z jedzie do góry do endstopu maksymalnego (Z-max).
+    Gdy dotknie endstopu, resetuje pozycję Z na max wysokość.
+    Następnie robot jedzie do tyłu do endstopu dolnego XY (0cm).
+    Resetuje pozycję XY na 0.
+    """
+    self.log("Rozpoczynam homming", "info")
+
+    #  1. Homming osi Z 
+    self.log("Ruch osi Z w górę...", "info")
+    self.platform.move_up(speed=30)
+    while not self.platform.is_top_endstop_triggered():
+        sleep(0.01)
+    self.platform.stop()
+    self.platform.ncoder.set_position(self.platform.max_height)
+    self.log(f"Oś Z pozycja ustawiona na {self.platform.max_height} cm.", "success")
+
+    #  2. Homming osi XY 
+    self.log("Ruch wózka XY do tyłu...", "info")
+    self.Motor_Left.set_speed_motor(False, 30)
+    self.Motor_Right.set_speed_motor(True, 30)
+    while not self.endstop_floor_1.change_detected():
+        sleep(0.01)
+    self.Motor_Left.set_speed_motor(True, 0)
+    self.Motor_Right.set_speed_motor(True, 0)
+    self.ncoder_floor.set_position(0)
+    self.log("Pozycja XY ustawiona na 0 cm.", "success")
+
+    self.log("Homming zakończony.", "success")
+
+    
+
     def move_forward(self, distance,paint_or_not=False):
         """
         Moves the robot forward or backward while adjusting its speed to maintain a target distance from the wall.
