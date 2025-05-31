@@ -92,11 +92,17 @@ class Robot():
 
                 if self.endstop_floor_1.change_detected():
                     current_position = 0
+                    self.ncoder_floor.set_position(0)
+                    self.log("Endstop1 triggered. Pozycja ustawiona na 0 cm.", "warning")
                     break
                 elif self.endstop_floor_2.change_detected():
                     current_position = self.maks_distance
+                    self.ncoder_floor.set_position(self.maks_distance)
+                    self.log(f"Endstop2 triggered. Pozycja ustawiona na {self.maks_distance} cm.", "warning")
                     break
 
+            
+                
                 # === 1. Measure current distance from the wall
                 current_distance = self.ultrasonik_sensor.filter_signal()
 
