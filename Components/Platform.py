@@ -79,6 +79,17 @@ class Platform():
 
         try:
             while current_position < target_distance:
+                if direction_up:
+                    if self.platform.endstop_max.change_detected():
+                        self.platform.ncoder.set_position(self.platform.maks_height)
+                        self.log(f"Endstop MAX triggered. Position set to {self.platform.maks_height} cm.", "warning")
+                        break
+                else:
+                    if self.platform.endstop_min.change_detected():
+                        self.platform.ncoder.set_position(0)
+                        self.log("Endstop MIN triggered. Position set to 0 cm.", "warning")
+                        break
+
                 remaining = target_distance - current_position
 
                 # Zwalnianie przy końcu
