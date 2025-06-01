@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
-import constans
+import Components.constans
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -28,7 +28,7 @@ class ScrewMotor():
         Stops the motor.
     """
 
-    def __init__(self, status_log, pin_A, pin_B):
+    def __init__(self, pin_A, pin_B, status_log):
         self.status_log = status_log
         self.pin_A = pin_A
         self.pin_B = pin_B

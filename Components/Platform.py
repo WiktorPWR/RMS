@@ -1,10 +1,10 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
-from constans import SERVO_PIN,ENKODER_PIN_1,ENKODER_PIN_2
-import ScrewMotor
-import Endstop
-import PaintSprayer
-import Ncoder
+from Components.constans import SERVO_PIN,ENKODER_PIN_1,ENKODER_PIN_2
+from Components.ScrewMotor import ScrewMotor
+from Components.Endstop import Endstop
+from Components.PaintSprayer import PaintSprayer
+from Components.Ncoder import Ncoder
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -24,18 +24,18 @@ class Platform():
         The endstop for the downward limit.
     """
 
-    def __init__(self,status_log, pin_A, pin_B, endstop_up_pin, endstop_down_pin):
+    def __init__(self, pin_A, pin_B, endstop_up_pin, endstop_down_pin, status_log):
         """
         Initializes the platform with the motor
         
      
         """
         self.status_log = status_log
-        self.screw_motor = ScrewMotor(pin_A, pin_B)
-        self.endstop_up = Endstop(endstop_up_pin)
-        self.endstop_down = Endstop(endstop_down_pin)
-        self.paint_sprayer = PaintSprayer(SERVO_PIN)
-        self.ncoder = Ncoder(ENKODER_PIN_1,ENKODER_PIN_2)
+        self.screw_motor = ScrewMotor(pin_A, pin_B, status_log)
+        self.endstop_up = Endstop(endstop_up_pin, status_log)
+        self.endstop_down = Endstop(endstop_down_pin, status_log)
+        self.paint_sprayer = PaintSprayer(SERVO_PIN, status_log)
+        self.ncoder = Ncoder(ENKODER_PIN_1,ENKODER_PIN_2, status_log)
 
     def log(self, message, type="success"):
         self.status_log.append({"source": "[Platform]", "message": message, "type": type})
