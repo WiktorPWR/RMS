@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
-from Components.constans import SERVO_PIN,ENKODER_PIN_1,ENKODER_PIN_2
+from Components.constans import SERVO_PIN,ENKODER_PIN_1,ENKODER_PIN_2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS,MZ1,MZ2
 from Components.ScrewMotor import ScrewMotor
 from Components.Endstop import Endstop
 from Components.PaintSprayer import PaintSprayer
@@ -24,19 +24,18 @@ class Platform():
         The endstop for the downward limit.
     """
 
-    def __init__(self, pin_A, pin_B, endstop_up_pin, endstop_down_pin, status_log):
+    def __init__(self,status_log):
         """
         Initializes the platform with the motor
         
      
         """
         self.status_log = status_log
-        self.screw_motor = ScrewMotor(pin_A, pin_B, status_log)
-        self.endstop_up = Endstop(endstop_up_pin, status_log)
-        self.endstop_down = Endstop(endstop_down_pin, status_log)
+        self.screw_motor = ScrewMotor(MZ1, MZ2, status_log)
+        self.endstop_up = Endstop(ENDSTOP3_PIN_MIN, status_log)
+        self.endstop_down = Endstop(ENDSTOP4_PIN_MAKS, status_log)
         self.paint_sprayer = PaintSprayer(SERVO_PIN, status_log)
-        self.ncoder = Ncoder(ENKODER_PIN_1,ENKODER_PIN_2, status_log)
-
+        self.ncoder = Ncoder(status_log,ENKODER_PIN_1,ENKODER_PIN_2)
     def log(self, message, type="success"):
         self.status_log.append({"source": "[Platform]", "message": message, "type": type})
 
@@ -80,13 +79,13 @@ class Platform():
         try:
             while current_position < target_distance:
                 if direction_up:
-                    if self.platform.endstop_max.change_detected():
-                        self.platform.ncoder.set_position(self.platform.maks_height)
+                    if self.endstop_up.change_detected():
+                        self.ncoder.set_position(self.platform.maks_height)
                         self.log(f"Endstop MAX triggered. Position set to {self.platform.maks_height} cm.", "warning")
                         break
                 else:
-                    if self.platform.endstop_min.change_detected():
-                        self.platform.ncoder.set_position(0)
+                    if self.endstop_down.change_detected():
+                        self.ncoder.set_position(0)
                         self.log("Endstop MIN triggered. Position set to 0 cm.", "warning")
                         break
 

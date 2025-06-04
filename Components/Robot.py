@@ -38,7 +38,7 @@ class Robot():
     Methods
     -------
     move_forward(distance)
-        Moves the robot forward or backward while maintaining a specified distance from the wall using PI control.
+        Moves the robot forward or backward while maintaininga specified distance from the wall using PI control.
     """
 
     Kp = 4                     # Proportional gain
@@ -56,47 +56,47 @@ class Robot():
         self.Motor_Left = Motor(M1A, M1B, status_log)
         self.Motor_Right = Motor(M2A, M2B, status_log)
         self.ultrasonik_sensor = Ultrasonic_sensor(ECHO_PIN, TRIG_PIN, status_log)
-        self.ncoder_floor = Ncoder(ENKODER_PIN_1, ENKODER_PIN_2, status_log)
-        self.endstop_floor_1 = Endstop(ENDSTOP1_PIN, status_log)
-        self.endstop_floor_2 = Endstop(ENDSTOP2_PIN, status_log)
-        self.platform = Platform(MZ1,MZ2,ENDSTOP3_PIN_MIN,ENDSTOP4_PIN_MAKS, status_log)
+        self.ncoder_floor = Ncoder(status_log,ENKODER_PIN_1, ENKODER_PIN_2)
+        self.endstop_floor_1 = Endstop(ENDSTOP1_PIN,status_log)
+        self.endstop_floor_2 = Endstop(ENDSTOP2_PIN,status_log)
+        self.platform = Platform(status_log)
         self.maks_distance = distance_between_floor_endstops
 
     def log(self, message, type="success"):
         self.status_log.append({"source": "[Robot]", "message": message, "type": type})
 
     def homming(self):
-    """
-    Homming dla osi Z i osi XY.
-    Oś Z jedzie do góry do endstopu maksymalnego (Z-max).
-    Gdy dotknie endstopu, resetuje pozycję Z na max wysokość.
-    Następnie robot jedzie do tyłu do endstopu dolnego XY (0cm).
-    Resetuje pozycję XY na 0.
-    """
-    self.log("Rozpoczynam homming", "info")
+    	"""
+    	Homming dla osi Z i osi XY.
+    	Oś Z jedzie do góry do endstopu maksymalnego (Z-max).
+    	Gdy dotknie endstopu, resetuje pozycję Z na max wysokość.
+    	Następnie robot jedzie do tyłu do endstopu dolnego XY (0cm).
+    	Resetuje pozycję XY na 0.
+    	"""
+    	self.log("Rozpoczynam homming", "info")
 
-    #  1. Homming osi Z 
-    self.log("Ruch osi Z w górę...", "info")
-    self.platform.move_up(speed=30)
-    while not self.platform.is_top_endstop_triggered():
-        sleep(0.01)
-    self.platform.stop()
-    self.platform.ncoder.set_position(self.platform.max_height)
-    self.log(f"Oś Z pozycja ustawiona na {self.platform.max_height} cm.", "success")
+    	#  1. Homming osi Z 
+    	self.log("Ruch osi Z w górę...", "info")
+    	self.platform.move_up(speed=30)
+    	while not self.platform.is_top_endstop_triggered():
+        	sleep(0.01)
+    	self.platform.stop()
+    	self.platform.ncoder.set_position(self.platform.max_height)
+    	self.log(f"Oś Z pozycja ustawiona na {self.platform.max_height} cm.", "success")
 
-    #  2. Homming osi XY 
-    self.log("Ruch wózka XY do tyłu...", "info")
-    self.Motor_Left.set_speed_motor(False, 30)
-    self.Motor_Right.set_speed_motor(True, 30)
-    while not self.endstop_floor_1.change_detected():
-        sleep(0.01)
-    self.Motor_Left.set_speed_motor(True, 0)
-    self.Motor_Right.set_speed_motor(True, 0)
-    self.ncoder_floor.set_position(0)
-    self.log("Pozycja XY ustawiona na 0 cm.", "success")
+    	#  2. Homming osi XY 
+    	self.log("Ruch wózka XY do tyłu...", "info")
+    	self.Motor_Left.set_speed_motor(False, 30)
+    	self.Motor_Right.set_speed_motor(True, 30)
+    	while not self.endstop_floor_1.change_detected():
+        	sleep(0.01)
+    	self.Motor_Left.set_speed_motor(True, 0)
+    	self.Motor_Right.set_speed_motor(True, 0)
+    	self.ncoder_floor.set_position(0)
+    	self.log("Pozycja XY ustawiona na 0 cm.", "success")
 
-    self.log("Homming zakończony.", "success")
-
+    	self.log("Homming zakończony.", "success")
+  
     
 
     def move_forward(self, distance,paint_or_not=False):

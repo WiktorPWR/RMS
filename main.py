@@ -5,9 +5,6 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
 from Components.Robot import Robot
-from Components.Platform import Platform
-from Components.PaintSprayer import PaintSprayer
-from Components.constans import ENDSTOP1_PIN, ENDSTOP2_PIN, MZ1, MZ2, ENDSTOP3_PIN_MIN, ENDSTOP4_PIN_MAKS, SERVO_PIN
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
@@ -18,15 +15,13 @@ class MainController:
 
         self.distance_between_floor_endstops = 100 # Distance between endstops in cm (Check and adjust)!!!
         self.robot = Robot(self.distance_between_floor_endstops, status_log)
-        self.platform = Platform(MZ1, MZ2, ENDSTOP3_PIN_MIN, ENDSTOP4_PIN_MAKS, status_log)
-        self.paint_sprayer = PaintSprayer(SERVO_PIN, status_log)
-
+        
     def log(self, message, type = "info"):
         self.status_log.append({"source": "[MainController]", "message": message, "type": type})
 
     def malowanie(self, x, z):
         self.log("Rozpoczynam malowanie", "info")
-        self.platform.move_z_axis(z)
+        self.robot.platform.move_z_axis(z)
         self.robot.move_forward(x, paint_or_not=True)
         self.log("Malowanie zakończone", "success")
 
