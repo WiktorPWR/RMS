@@ -8,6 +8,7 @@ from Components.Platform import Platform
 from Components.ScrewMotor import ScrewMotor
 from Components.Ultrasonic_sensor import Ultrasonic_sensor
 from time import sleep, time     # Import sleep for delays and time for timestamps
+from datetime import datetime
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
@@ -63,7 +64,7 @@ class Robot():
         self.maks_distance = distance_between_floor_endstops
 
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[Robot]", "message": message, "type": type})
+        self.status_log.append({"source": "Robot", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def homming(self):
     	"""
