@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
 import Components.constans
+from datetime import datetime
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -48,7 +49,7 @@ class Motor():
         self.pwm_2.start(0)  # Start with 0% duty cycle
 
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[Motor]", "message": message, "type": type})
+        self.status_log.append({"source": "Motor", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def set_speed_motor(self, direction, speed):
         """
