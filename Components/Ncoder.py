@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 import Components.constans
 from time import sleep, time     # Import sleep for delays and time for timestamps
+from datetime import datetime
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
@@ -57,7 +58,7 @@ class Ncoder():
         GPIO.add_event_detect(self.pin_a, GPIO.BOTH, callback=self.encoder_callback, bouncetime=1)
 
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[Ncoder]", "message": message, "type": type})
+        self.status_log.append({"source": "Ncoder", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def encoder_callback(self, channel):
         """
