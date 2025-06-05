@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
 import Components.constans
+from datetime import datetime
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -36,7 +37,7 @@ class PaintSprayer():
         self.release()
 
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[PaintSprayer]", "message": message, "type": type})
+        self.status_log.append({"source": "PaintSprayer", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def press(self):
         """naciskanie puchy"""
