@@ -5,6 +5,7 @@
 import RPi.GPIO as GPIO          # Import GPIO library for Raspberry Pi
 from time import sleep, time     # Import sleep for delays and time for timestamps
 from Components.Robot import Robot
+from datetime import datetime
 
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
@@ -17,7 +18,7 @@ class MainController:
         self.robot = Robot(self.distance_between_floor_endstops, status_log)
         
     def log(self, message, type = "info"):
-        self.status_log.append({"source": "[MainController]", "message": message, "type": type})
+        self.status_log.append({"source": "MainController", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def malowanie(self, x, z):
         self.log("Rozpoczynam malowanie", "info")
