@@ -5,6 +5,7 @@ from Components.ScrewMotor import ScrewMotor
 from Components.Endstop import Endstop
 from Components.PaintSprayer import PaintSprayer
 from Components.Ncoder import Ncoder
+from datetime import datetime
 GPIO.setmode(GPIO.BCM)           # Use Broadcom (BCM) pin numbering
 GPIO.setwarnings(False)          # Suppress GPIO warnings
 
@@ -37,7 +38,7 @@ class Platform():
         self.paint_sprayer = PaintSprayer(SERVO_PIN, status_log)
         self.ncoder = Ncoder(status_log,ENKODER_PIN_1,ENKODER_PIN_2)
     def log(self, message, type="success"):
-        self.status_log.append({"source": "[Platform]", "message": message, "type": type})
+        self.status_log.append({"source": "Platform", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def move_up(self, speed):
         """Move the platform upwards if the endstop is not triggered."""
