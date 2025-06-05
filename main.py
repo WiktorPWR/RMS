@@ -21,9 +21,32 @@ class MainController:
         self.status_log.append({"source": "MainController", "message": message, "type": type, "time": datetime.now().isoformat()})
 
     def malowanie(self, x, z):
-        self.log("Rozpoczynam malowanie", "info")
-        self.robot.platform.move_z_axis(z)
-        self.robot.move_forward(x, paint_or_not=True)
+        self.log(f"Start malowania: X={x}cm, Z={z}cm", "info")
+        step = 10  # wysokość kroku w cm
+        current_z = z
+        direction = True  # True = w prawo, False = w lewo
+
+        # Ustaw platformę na wysokość początkową Z
+        self.robot.platform.move_z_axis(current_z)
+        self.log(f"Platforma ustawiona na wysokość {current_z} cm", "info")
+
+        while current_z > 0:
+            # Przejedź X w odpowiednim kierunku
+            self.log(f"Jadę {'w prawo' if direction else 'w lewo'} na odległość {x} cm na wysokości {current_z} cm", "info")
+            self.robot.move_forward(x if direction else -x, paint_or_not=True)
+            self.log(f"Przejechano {x} cm na wysokości {current_z} cm", "success")
+
+            # Zatrzymaj, opuść o 10 cm
+            current_z -= step
+            if current_z <= 0:
+                self.log("Osiągnięto Z=0, koniec malowania.", "success")
+                break
+            self.robot.platform.move_z_axis(-step)
+            self.log(f"Platforma opuszczona o {step} cm, nowa wysokość: {current_z} cm", "info")
+
+            # Zmień kierunek jazdy
+            direction = not direction
+
         self.log("Malowanie zakończone", "success")
 
     def kalibracja(self):
