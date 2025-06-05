@@ -462,10 +462,13 @@
         const logArea = document.getElementById("logArea");
         logArea.innerHTML = "";
 
+        logs.sort((a, b) => new Date(a.time) - new Date(b.time));
         logs.forEach(log => {
           const entry = document.createElement("div");
           entry.className = `log-entry log-${log.type}`;
-          entry.textContent = `[${log.source}] ${log.message}`;
+          // Wyciągamy tylko godzinę z ISO stringa
+          const time = log.time ? log.time.substring(11, 19) : "";
+          entry.textContent = `[${time}] [${log.source}] ${log.message}`;
           logArea.appendChild(entry);
         });
       } catch (err) {
