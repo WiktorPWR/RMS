@@ -6,11 +6,10 @@ from main import main_controller, status_log
 app = Flask(__name__)
 
 # ------------------------------Globalne logi i historia (zerowane po restarcie serwera)--------------------
-status_log = []
 history_log = []
 
 def log(source, message, type="info"):
-    status_log.append({"source": source, "message": message, "type": type})
+    status_log.append({"source": source, "message": message, "type": type, "time": datetime.now().isoformat()})
 
 #-----------------------------------------------STRONA INTERNETOWA------------------------------------------
 @app.route('/')
